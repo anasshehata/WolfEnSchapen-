@@ -5,11 +5,19 @@ using UnityEngine.UI;
 
 class GridSpace : MonoBehaviour {
 
-	public Sprite emptySprite;
-	public Sprite wolfSprite;
-	public Sprite sheepSprite;
+    public Sprite emptySprite;
+    public Sprite wolfSprite;
+    public Sprite sheepSprite;
 
     public int foxPosition = 0;
+
+    public int currentSheep1Position = 1;
+    public int currentSheep2Position = 3;
+    public int currentSheep3Position = 5;
+    public int currentSheep4Position = 7;
+
+
+    //if currentsheeppos works, replace with sheeppos.
     public int sheep1Position = 1;
     public int sheep2Position = 3;
     public int sheep3Position = 5;
@@ -18,26 +26,46 @@ class GridSpace : MonoBehaviour {
     public GridSpaceStatus sheep2OldPos = GridSpaceStatus.SHEEP;
     public GridSpaceStatus sheep3OldPos = GridSpaceStatus.SHEEP;
     public GridSpaceStatus sheep4OldPos = GridSpaceStatus.SHEEP;
-    public bool AITurn = false;
+    public bool AITurn = true;
 
-    public int test = 0;
-    public int test2 = 0;
+    public bool sheep1 = false;
+    public bool sheep2 = false;
+    public bool sheep3 = false;
+    public bool sheep4 = false; 
+
+    public bool clearSignalAlowedGspace = true;
+    public bool signalDroped = false;
+    public bool signalPicked = false;
+
     private IList<int> alowedGridSpaceses = new List<int>();
     private IList<int> alowedGridSpacesSheep = new List<int>();
+    private IList<int> mmAlowedGridSpacesSheep = new List<int>();
+
+    public IList<int> currentAlowedGridSpacesSheep = new List<int>();
+
+
+    public bool isAlowedGridSpace = false;
+
+    public int lastpickedUp = 0;
 
     [SerializeField]
-	private int gridSpaceNumber;
-	[SerializeField]
-	private GridSpaceStatus gridSpaceStatus = GridSpaceStatus.EMPTY;
+    private int gridSpaceNumber;
+    [SerializeField]
+    private GridSpaceStatus gridSpaceStatus = GridSpaceStatus.EMPTY;
     
 
     public int GetGridSpaceNumber() {
-		return this.gridSpaceNumber;
-	}
+        return this.gridSpaceNumber;
+    }
 
     public IList<int> GetAlowedGridSpacesSheep()
     {
         return this.alowedGridSpacesSheep;
+    }
+
+    public IList<int> GetMmAlowedGridSpacesSheep()
+    {
+        return this.mmAlowedGridSpacesSheep;
     }
 
     public IList<int> GetAlowedGridSpaces()
@@ -50,30 +78,29 @@ class GridSpace : MonoBehaviour {
         return this.AITurn;
     }
     public void SetGridSpaceNumber(int gridSpaceNumber) {
-		this.gridSpaceNumber = gridSpaceNumber;
-	}
+        this.gridSpaceNumber = gridSpaceNumber;
+    }
 
-	public GridSpaceStatus GetGridSpaceStatus() {
-		return this.gridSpaceStatus;
-	}       
+    public GridSpaceStatus GetGridSpaceStatus() {
+        return this.gridSpaceStatus;
+    }       
 
-	public void SetGridSpaceStatus(GridSpaceStatus gridSpaceStatus) {
-		this.gridSpaceStatus = gridSpaceStatus;
-		if (gridSpaceStatus == GridSpaceStatus.WOLF) {
-			this.GetComponent<Image>().sprite = wolfSprite;
-		} else if (gridSpaceStatus == GridSpaceStatus.SHEEP) { 
-			this.GetComponent<Image>().sprite = sheepSprite;
-		} else {
-			this.GetComponent<Image>().sprite = emptySprite;
-		}
-	}
+    public void SetGridSpaceStatus(GridSpaceStatus gridSpaceStatus) {
+        this.gridSpaceStatus = gridSpaceStatus;
+        if (gridSpaceStatus == GridSpaceStatus.WOLF) {
+            this.GetComponent<Image>().sprite = wolfSprite;
+        } else if (gridSpaceStatus == GridSpaceStatus.SHEEP) { 
+            this.GetComponent<Image>().sprite = sheepSprite;
+        } else {
+            this.GetComponent<Image>().sprite = emptySprite;
+        }
+    }
 
     public void SetAlowedGridSpaces(int Alowedgridspace)
     {
         if (this.alowedGridSpaceses.Contains(Alowedgridspace) == false)
         {
             this.alowedGridSpaceses.Add(Alowedgridspace);
-            this.test = alowedGridSpaceses[0];
         }
     }
 
@@ -82,27 +109,55 @@ class GridSpace : MonoBehaviour {
         if (this.alowedGridSpacesSheep.Contains(AlowedgridspaceSheep) == false)
         {
             this.alowedGridSpacesSheep.Add(AlowedgridspaceSheep);
-            this.test2 = alowedGridSpacesSheep[0];
         }
     }
+
+    public void SetMmAlowedGridSpacesSheep(int mmAlowedGridSpacesSheep)
+    {
+        if (this.mmAlowedGridSpacesSheep.Contains(mmAlowedGridSpacesSheep) == false)
+        {
+            this.mmAlowedGridSpacesSheep.Add(mmAlowedGridSpacesSheep);
+            //this.test2 = mmAlowedGridSpacesSheep[0];
+        }
+    }
+
 
     public void SetFoxPosition(int FoxPosition)
     {
         this.foxPosition = FoxPosition;
     }
 
+    public int getSheep1Position(){
+        return sheep1Position;
+    }
+
     public void SetSheep1Position(int Sheep1Position)
     {
         this.sheep1Position = Sheep1Position;
     }
+
+    public int getSheep2Position(){
+        return sheep2Position;
+    }
+
     public void SetSheep2Position(int Sheep2Position)
     {
         this.sheep2Position = Sheep2Position;
     }
+
+    public int getSheep3Position(){
+        return sheep3Position;
+    }
+
     public void SetSheep3Position(int Sheep3Position)
     {
         this.sheep3Position = Sheep3Position;
     }
+
+    public int getSheep4Position(){
+        return sheep4Position;
+    }
+
     public void SetSheep4Position(int Sheep4Position)
     {
         this.sheep4Position = Sheep4Position;
@@ -144,323 +199,172 @@ class GridSpace : MonoBehaviour {
 
 
     public override string ToString() {
-		return "GridSpaceNumber: " + gridSpaceNumber + " - GridSpaceStatus: " + gridSpaceStatus.ToString();
-	}
+        return "GridSpaceNumber: " + gridSpaceNumber + " - GridSpaceStatus: " + gridSpaceStatus.ToString();
+    }
 
-	public void ButtonClick() {
+    public void ButtonClick() {
         GameObject scripts = GameObject.Find ("/Scripts");
-		Player player = GameObject.Find("/Player").GetComponent<Player> ();
+        Player player = GameObject.Find("/Player").GetComponent<Player> ();
         CursorController cursorController = scripts.GetComponent<CursorController> ();
+        clearSignalAlowedGspace = false;
         
 
         CursorStatus cursorStatus = cursorController.GetCursorStatus();
         // The playerRole is a GridSpaceStatus to easily check if the clicked GridSpace can be moved by the player.
-        if (cursorStatus == CursorStatus.EMPTY && player.playerRole == this.gridSpaceStatus) {
+        if (cursorStatus == CursorStatus.EMPTY && player.playerRole == this.gridSpaceStatus && !AITurn) {
             // Pick up current piece
             //print("---"+ GetGridSpaceStatus());
-			cursorController.SetCursorStatus(CursorStatus.OCCUPIED); 
-			this.SetGridSpaceStatus (GridSpaceStatus.EMPTY);
+           
+            cursorController.SetCursorStatus(CursorStatus.OCCUPIED); 
+            this.SetGridSpaceStatus (GridSpaceStatus.EMPTY);
+            lastpickedUp = this.gridSpaceNumber;
+            print("picked up"); 
+            if(signalDroped == true){
+                signalDroped = false;
+                // signalpicked = true;
+            }
 
         }
-
-        print("sheep1Position: " + sheep1Position);
+        //print sheep positions
+        /*print("sheep1Position: " + sheep1Position);
         print("sheep2Position: " + sheep2Position);
         print("sheep3Position: " + sheep3Position);
-        print("sheep4Position: " + sheep4Position);
+        print("sheep4Position: " + sheep4Position);*/
 
-        if (alowedGridSpaceses.Count == 4)
-        {
-            print("pos0:" + alowedGridSpaceses[0]);
-            print("pos1:" + alowedGridSpaceses[1]);
-            print("pos2:" + alowedGridSpaceses[2]);
-            print("pos3:" + alowedGridSpaceses[3]);
+      
 
-   
-            print("---");
-        }
-        if (alowedGridSpaceses.Count == 2 )
-        {
-            print("pos0:" + alowedGridSpaceses[0]);
-            print("pos1:" + alowedGridSpaceses[1]);
- 
-            print("---");
-        }
-        if (alowedGridSpaceses.Count == 1 )
-        {
-            print("pos0:" + alowedGridSpaceses[0]);
 
-            print("---");
+        /*print(alowedGridSpaceses.Count);
+        print("0--0");*/
+        for (int i = 0; i < alowedGridSpaceses.Count; i++)
+        {
+            // print("alowedGridSpaceses[" + i + "]: " + alowedGridSpaceses[i]);
         }
 
-        if (alowedGridSpacesSheep.Count == 5)
+        for (int i = 0; i < alowedGridSpacesSheep.Count; i++)
         {
-
-
-            print("alowedGridSpacesSheep [0]:" + alowedGridSpacesSheep[0]);
-            print("alowedGridSpacesSheep [1]:" + alowedGridSpacesSheep[1]);
-            print("alowedGridSpacesSheep [2]:" + alowedGridSpacesSheep[2]);
-            print("alowedGridSpacesSheep [3]:" + alowedGridSpacesSheep[3]);
-            print("---");
-        }
-        if (alowedGridSpacesSheep.Count == 3)
-        {
-            print("alowedGridSpacesSheep[0]:" + alowedGridSpacesSheep[0]);
-            print("alowedGridSpacesSheep[1]:" + alowedGridSpacesSheep[1]);
-            print("alowedGridSpacesSheep[2]:" + alowedGridSpacesSheep[2]);
-            print("---");
+            // print("alowedGridSpacesSheep[" + i + "]: " + alowedGridSpacesSheep[i]);
         }
 
-        if (alowedGridSpacesSheep.Count == 2)
+         for (int i = 0; i < mmAlowedGridSpacesSheep.Count; i++)
         {
-            print("alowedGridSpacesSheep[0]:" + alowedGridSpacesSheep[0]);
-            print("alowedGridSpacesSheep[1]:" + alowedGridSpacesSheep[1]);
-            print("---");
-        }
-        print(alowedGridSpaceses.Count);
-        print("0--0");
-
-
-
-        if (cursorStatus == CursorStatus.OCCUPIED && alowedGridSpaceses.Count == 4) {
-            if (this.gridSpaceStatus == GridSpaceStatus.EMPTY && 
-                alowedGridSpaceses[0] == foxPosition || 
-                alowedGridSpaceses[1] == foxPosition||
-                alowedGridSpaceses[2] == foxPosition ||
-                alowedGridSpaceses[3] == foxPosition
-                ) {
-                // Drop Piece if allowed
-                print("Count = 4");
-                print("FoxPOsition = " + foxPosition);
-                print(this.GetGridSpaceNumber());
-
-                cursorController.SetCursorStatus(CursorStatus.EMPTY);
-				this.SetGridSpaceStatus (player.playerRole);
-
-			}
-		}
-        if(cursorStatus == CursorStatus.OCCUPIED && alowedGridSpaceses.Count == 2)
-        {
-            if (this.gridSpaceStatus == GridSpaceStatus.EMPTY &&
-                alowedGridSpaceses[0] == foxPosition ||
-                alowedGridSpaceses[1] == foxPosition)
-            {
-                // Drop Piece if allowed
-                print("Count = 2");
-                print("FoxPOsition = " + foxPosition);
-                print(this.GetGridSpaceNumber());
-
-                cursorController.SetCursorStatus(CursorStatus.EMPTY);
-                this.SetGridSpaceStatus(player.playerRole);
-            }
-        }
-        if (cursorStatus == CursorStatus.OCCUPIED && alowedGridSpaceses.Count == 1)
-        {
-            if (this.gridSpaceStatus == GridSpaceStatus.EMPTY &&
-                alowedGridSpaceses[0] == foxPosition )
-            {
-                // Drop Piece if allowed
-            print("Count = 1");
-            print("FoxPOsition = " + foxPosition);
-            print(this.GetGridSpaceNumber());
-
-            cursorController.SetCursorStatus(CursorStatus.EMPTY);
-            this.SetGridSpaceStatus(player.playerRole);
-            }
+            // print("mmAlowedGridSpacesSheep[" + i + "]: " + mmAlowedGridSpacesSheep[i]);
         }
 
-        /*if (cursorStatus == CursorStatus.OCCUPIED && alowedGridSpacesSheep.Count == 4)
+
+
+            
+        
+        for (int i = 0; i < alowedGridSpaceses.Count; i++)
         {
-            if (this.gridSpaceStatus == GridSpaceStatus.EMPTY &&
-                alowedGridSpacesSheep[0] == sheep1Position ||
-                alowedGridSpacesSheep[1] == sheep1Position 
-                )
-            {
-                // Drop Piece if allowed
-                print("countSheep = 4");
-                print("SheePosition = " + foxPosition);
-                print(this.GetGridSpaceNumber());
-
-                cursorController.SetCursorStatus(CursorStatus.EMPTY);
-                this.SetGridSpaceStatus(player.playerRole);
-
-            }
-        }*/
-
-        //count == 3
-        if (cursorStatus == CursorStatus.OCCUPIED && alowedGridSpacesSheep.Count == 3)
-        {
-
-            //sheep1
-            if (this.gridSpaceStatus == GridSpaceStatus.EMPTY &&
-                alowedGridSpacesSheep[0] == sheep1Position ||
-                alowedGridSpacesSheep[1] == sheep1Position ||
-                alowedGridSpacesSheep[2] == sheep1Position
-
-                )
-            {
-                if (sheep1OldPos == GridSpaceStatus.EMPTY)
-                {
+            if (cursorStatus == CursorStatus.OCCUPIED) {
+                if (this.gridSpaceStatus == GridSpaceStatus.EMPTY && 
+                    alowedGridSpaceses[i] == foxPosition && player.playerRole == GridSpaceStatus.WOLF
+                    ) {
                     // Drop Piece if allowed
-                    print("oldPosition" + sheep1OldPos);
-                    /*print("CountSheep = 2");
-                    print("SheePosition = " + sheep1Position);
-                    print(this.GetGridSpaceNumber());*/
+                    // print("Count = " + i);
+                    // print("FoxPOsition = " + foxPosition);
+                    // print(this.GetGridSpaceNumber());
 
                     cursorController.SetCursorStatus(CursorStatus.EMPTY);
-                    this.SetGridSpaceStatus(player.playerRole);
-                    AITurn = true;
-                }
-            }
+                   
+                    this.SetGridSpaceStatus (player.playerRole);
 
-            // sheep 2
-            if (this.gridSpaceStatus == GridSpaceStatus.EMPTY &&
-                alowedGridSpacesSheep[0] == sheep2Position ||
-                alowedGridSpacesSheep[1] == sheep2Position ||
-                alowedGridSpacesSheep[2] == sheep2Position
+                    
+                    print("Case 0");
 
-                )
-            {
-                if (sheep2OldPos == GridSpaceStatus.EMPTY)
-                {
-                    // Drop Piece if allowed
-                    print("oldPosition" + sheep2OldPos);
-                    /* print("CountSheep = 2");
-                     print("SheePosition = " + sheep2Position);
-                     print(this.GetGridSpaceNumber());*/
-
-                    cursorController.SetCursorStatus(CursorStatus.EMPTY);
-                    this.SetGridSpaceStatus(player.playerRole);
-                    AITurn = true;
-                }
-            }
-
-            //sheep 3
-            if (this.gridSpaceStatus == GridSpaceStatus.EMPTY &&
-                alowedGridSpacesSheep[0] == sheep3Position ||
-                alowedGridSpacesSheep[1] == sheep3Position ||
-                alowedGridSpacesSheep[2] == sheep3Position
-
-                )
-            {
-                if (sheep3OldPos == GridSpaceStatus.EMPTY)
-                {
-                    // Drop Piece if allowed
-                    print("oldPosition" + sheep3OldPos);
-                    /*print("CountSheep = 2");
-                    print("SheePosition = " + sheep3Position);
-                    print(this.GetGridSpaceNumber());*/
-
-                    cursorController.SetCursorStatus(CursorStatus.EMPTY);
-                    this.SetGridSpaceStatus(player.playerRole);
-                    AITurn = true;
-                }
-            }
-
-            //sheep4
-            if (this.gridSpaceStatus == GridSpaceStatus.EMPTY &&
-               alowedGridSpacesSheep[0] == sheep4Position ||
-               alowedGridSpacesSheep[1] == sheep4Position ||
-                alowedGridSpacesSheep[2] == sheep4Position
-
-               )
-            {
-                if (sheep4OldPos == GridSpaceStatus.EMPTY)
-                {
-                    // Drop Piece if allowed
-                    print("oldPosition" + sheep4OldPos);
-                    /* print("CountSheep = 2");
-                     print("SheePosition = " + sheep4Position);
-                     print(this.GetGridSpaceNumber());*/
-
-                    cursorController.SetCursorStatus(CursorStatus.EMPTY);
-                    this.SetGridSpaceStatus(player.playerRole);
-                    AITurn = true;
                 }
             }
         }
-        if (cursorStatus == CursorStatus.OCCUPIED && alowedGridSpacesSheep.Count == 2)
+
+
+        for (int i = 0; i < currentAlowedGridSpacesSheep.Count; i++)
         {
-            if (this.gridSpaceStatus == GridSpaceStatus.EMPTY &&
-                alowedGridSpacesSheep[0] == sheep1Position ||
-                alowedGridSpacesSheep[1] == sheep1Position
-                )
+            //print(alowedGridSpacesSheep[i]);
+            if (cursorStatus == CursorStatus.OCCUPIED)
             {
-                if (sheep1OldPos == GridSpaceStatus.EMPTY)
-                {
-                    // Drop Piece if allowed
-                    /* print("GRIDSTATUS" + this.gridSpaceStatus);
-                     print("CountSheep = 1");
-                     print("SheePosition = " + foxPosition);
-                     print(this.GetGridSpaceNumber());*/
 
-                    cursorController.SetCursorStatus(CursorStatus.EMPTY);
-                    this.SetGridSpaceStatus(player.playerRole);
-                    AITurn = true;
+                //sheep1
+                if (this.gridSpaceStatus == GridSpaceStatus.EMPTY && sheep1 == true)
+                {
+                    if (sheep1OldPos != GridSpaceStatus.SHEEP)
+                    {
+                        
+                        if(currentAlowedGridSpacesSheep[i] == this.gridSpaceNumber){
+                            cursorController.SetCursorStatus(CursorStatus.EMPTY);
+                            this.SetGridSpaceStatus(player.playerRole);
+                            AITurn = true;
+                            clearSignalAlowedGspace = true;
+                            signalDroped = true;
+                            sheep1Position = this.gridSpaceNumber;
+                            print("SHEEEEEEP POSSS1 !" + sheep1Position);
+                            print("SHEEEEEEP POSSS2 !" + sheep2Position);
+                            print("SHEEEEEEP POSSS3 !" + sheep3Position);
+                            print("SHEEEEEEP POSSS4 !" + sheep4Position);
+                        }
+                    
+                    }
+                }
+
+                // sheep 2
+                if (this.gridSpaceStatus == GridSpaceStatus.EMPTY && sheep2 == true )
+                {
+                    if (sheep2OldPos != GridSpaceStatus.SHEEP)
+                    {
+                        if(currentAlowedGridSpacesSheep[i] == this.gridSpaceNumber){
+                            cursorController.SetCursorStatus(CursorStatus.EMPTY);
+                            this.SetGridSpaceStatus(player.playerRole);
+                            AITurn = true;
+                            clearSignalAlowedGspace = true;
+                            signalDroped = true;
+                            sheep2Position = this.gridSpaceNumber;
+                            print("SHEEEEEEP POSSS1 !" + sheep1Position);
+                            print("SHEEEEEEP POSSS2 !" + sheep2Position);
+                            print("SHEEEEEEP POSSS3 !" + sheep3Position);
+                            print("SHEEEEEEP POSSS4 !" + sheep4Position);
+                        }
+                    }
+                }
+
+                //sheep 3
+                if (this.gridSpaceStatus == GridSpaceStatus.EMPTY && sheep3 == true)
+                {
+                    if (sheep3OldPos != GridSpaceStatus.SHEEP)
+                    {
+                        if(currentAlowedGridSpacesSheep[i] == this.gridSpaceNumber){
+                            cursorController.SetCursorStatus(CursorStatus.EMPTY);
+                            this.SetGridSpaceStatus(player.playerRole);
+                            AITurn = true;
+                            clearSignalAlowedGspace = true;
+                            signalDroped = true;
+                            sheep3Position = this.gridSpaceNumber;
+                             print("SHEEEEEEP POSSS1 !" + sheep1Position);
+                            print("SHEEEEEEP POSSS2 !" + sheep2Position);
+                            print("SHEEEEEEP POSSS3 !" + sheep3Position);
+                            print("SHEEEEEEP POSSS4 !" + sheep4Position);
+                        }
+                    }
+                }
+                //sheep4
+                if (this.gridSpaceStatus == GridSpaceStatus.EMPTY && sheep4 == true)
+                { 
+                    if (sheep4OldPos != GridSpaceStatus.SHEEP)
+                    {
+                       if(currentAlowedGridSpacesSheep[i] == this.gridSpaceNumber){
+                            cursorController.SetCursorStatus(CursorStatus.EMPTY);
+                            this.SetGridSpaceStatus(player.playerRole);
+                            AITurn = true;
+                            clearSignalAlowedGspace = true;
+                            signalDroped = true;
+                            sheep4Position = this.gridSpaceNumber;
+                             print("SHEEEEEEP POSSS1 !" + sheep1Position);
+                            print("SHEEEEEEP POSSS2 !" + sheep2Position);
+                            print("SHEEEEEEP POSSS3 !" + sheep3Position);
+                            print("SHEEEEEEP POSSS4 !" + sheep4Position);
+                        }
+                    }
                 }
             }
-
-            // sheep 2
-            if (this.gridSpaceStatus == GridSpaceStatus.EMPTY &&
-                alowedGridSpacesSheep[0] == sheep2Position ||
-                alowedGridSpacesSheep[1] == sheep2Position
-
-                )
-            {
-                if (sheep2OldPos == GridSpaceStatus.EMPTY)
-                {
-                    // Drop Piece if allowed
-                   // print("CountSheep = 1");
-                   // print("SheePosition = " + foxPosition);
-                   // print(this.GetGridSpaceNumber());
-
-                    cursorController.SetCursorStatus(CursorStatus.EMPTY);
-                    this.SetGridSpaceStatus(player.playerRole);
-                    AITurn = true;
-                }
-            }
-
-            //sheep 3
-            if (this.gridSpaceStatus == GridSpaceStatus.EMPTY &&
-                alowedGridSpacesSheep[0] == sheep3Position ||
-                alowedGridSpacesSheep[1] == sheep3Position
-
-                )
-            {
-                if (sheep3OldPos == GridSpaceStatus.EMPTY)
-                {
-                    // Drop Piece if allowed
-                   // print("CountSheep = 1");
-                   // print("SheePosition = " + foxPosition);
-                   // print(this.GetGridSpaceNumber());
-
-                    cursorController.SetCursorStatus(CursorStatus.EMPTY);
-                    this.SetGridSpaceStatus(player.playerRole);
-                    AITurn = true;
-                }
-            }
-
-            //sheep4
-            if (this.gridSpaceStatus == GridSpaceStatus.EMPTY &&
-               alowedGridSpacesSheep[0] == sheep4Position ||
-                alowedGridSpacesSheep[1] == sheep4Position
-
-               )
-            {
-                if (sheep4OldPos == GridSpaceStatus.EMPTY)
-                {
-                    // Drop Piece if allowed
-                   // print("CountSheep = 1");
-                   // print("SheePosition = " + foxPosition);
-                   // print(this.GetGridSpaceNumber());
-
-                    cursorController.SetCursorStatus(CursorStatus.EMPTY);
-                    this.SetGridSpaceStatus(player.playerRole);
-                    AITurn = true;
-                }
-            }
-
-
-            //AI
         }
     }
 

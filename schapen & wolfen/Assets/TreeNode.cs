@@ -8,16 +8,24 @@ public class TreeNode<T>
     public delegate bool TraversalDataDelegate(T data);
     public delegate bool TraversalNodeDelegate(TreeNode<T> node);
 
-    private readonly T _data;
+    private T _data;
     private readonly TreeNode<T> _parent;
-    private readonly int _level;
-    private readonly List<TreeNode<T>> _children;
+    public int _level;
+    public readonly List<TreeNode<T>> _children;
+    public int _maxValue;
+    public int _minValue;
+    public int _bestMove;
+    public int _gridSpaceValue;
+    public bool gameOver;
 
     public TreeNode(T data)
     {
         _data = data;
         _children = new List<TreeNode<T>>();
         _level = 0;
+        _maxValue = int.MinValue;
+        _minValue = int.MaxValue;
+        _gridSpaceValue = -1;
     }
 
     public TreeNode(T data, TreeNode<T> parent) : this(data)
@@ -31,6 +39,10 @@ public class TreeNode<T>
     public bool IsRoot { get { return _parent == null; } }
     public bool IsLeaf { get { return _children.Count == 0; } }
     public T Data { get { return _data; } }
+    public void setData(T Data)
+    {
+        _data = Data;
+    }
     public TreeNode<T> Parent { get { return _parent; } }
 
     public TreeNode<T> this[int key]
@@ -46,6 +58,14 @@ public class TreeNode<T>
     public TreeNode<T> AddChild(T value)
     {
         TreeNode<T> node = new TreeNode<T>(value, this);
+        _children.Add(node);
+
+        return node;
+    }
+
+    public TreeNode<T> Addchild(TreeNode<T> node)
+    {
+        
         _children.Add(node);
 
         return node;
