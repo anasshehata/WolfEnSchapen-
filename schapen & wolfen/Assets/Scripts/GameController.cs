@@ -1527,71 +1527,72 @@ public class GameController : MonoBehaviour {
                 // print("foxPOSCLONEAlgorithm " + root._children[i]._gridSpaceValue);
                 if (root._children[i]._gridSpaceValue > -1)
                 {
-                    foxPosClone = root._children[i]._gridSpaceValue;
-                }
-                //sheepNr count from 0 to 3 (sheep1 to sheep4);
-                for (int y = 0; y < root._children[i].Count; y++)
-                {
-                    if(root._children[i]._children[y]._gridSpaceValue > -1){
-                        if(root._children[i]._children[y].sheepNumbr == 0){
-                            sheepListClone[0] = root._children[i]._children[y]._gridSpaceValue;
+                    if(root._children[i]._gridSpaceValue > -1){
+                        if(root._children[i].sheepNumbr == 0){
+                            sheepListClone[0] = root._children[i]._gridSpaceValue;
                             sheepListClone[1] = sheep2Posbuff;
                             sheepListClone[2] = sheep3Posbuff;
                             sheepListClone[3] = sheep4Posbuff;
                         }
-                        if(root._children[i]._children[y].sheepNumbr == 1){
-                            sheepListClone[1] = root._children[i]._children[y]._gridSpaceValue;
+                        if(root._children[i].sheepNumbr == 1){
+                            sheepListClone[1] = root._children[i]._gridSpaceValue;
 
 
                             sheepListClone[0] = sheep1Posbuff;
                             sheepListClone[2] = sheep3Posbuff;
                             sheepListClone[3] = sheep4Posbuff;
                         }
-                        if(root._children[i]._children[y].sheepNumbr == 2){
-                            sheepListClone[2] = root._children[i]._children[y]._gridSpaceValue;
+                        if(root._children[i].sheepNumbr == 2){
+                            sheepListClone[2] = root._children[i]._gridSpaceValue;
 
                             sheepListClone[0] = sheep1Posbuff;
                             sheepListClone[1] = sheep2Posbuff;
                             sheepListClone[3] = sheep4Posbuff;
                         }
-                        if(root._children[i]._children[y].sheepNumbr == 3){
-                            sheepListClone[3] = root._children[i]._children[y]._gridSpaceValue;
+                        if(root._children[i].sheepNumbr == 3){
+                            sheepListClone[3] = root._children[i]._gridSpaceValue;
 
                             sheepListClone[0] = sheep1Posbuff;
                             sheepListClone[1] = sheep2Posbuff;
                             sheepListClone[2] = sheep3Posbuff;
                         }
                     }
+                    
+                }
+                //sheepNr count from 0 to 3 (sheep1 to sheep4);
+                for (int y = 0; y < root._children[i].Count; y++)
+                {
+                    foxPosClone = root._children[i]._children[y]._gridSpaceValue;
                     returnValue = createTreeSheep(root._children[i]._children[y], depth - 1, false);
                 }
             }
 
             //--start
-            
+            //// Todo ------- refactor to sheepAI
             for(int x = 0; x < returnValue.Parent.Parent.Count; x++){
-                int posssBuffer = + 1000;
-                int oldValue = -1000;
+                int posssBuffer = - 1000;
+                int oldValue = +1000;
                 for(int i = 0; i < returnValue.Parent.Parent[x].Count; i++){
 
-                    int neggBuffer = -1000;
+                    int neggBuffer = +1000;
                     
                     for(int y = 0; y < returnValue.Parent.Parent[x][i].Count; y++){
 
                         
-                        if(returnValue.Parent.Parent[x][i][y].Data > neggBuffer && returnValue.Parent.Parent[x][i][y].Data != neggBuffer){
+                        if(returnValue.Parent.Parent[x][i][y].Data < neggBuffer && returnValue.Parent.Parent[x][i][y].Data != neggBuffer){
                             //print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" + returnValue.Parent.Parent[x][i][y].Data );
                             neggBuffer = returnValue.Parent.Parent[x][i][y].Data;
                         }
                     }
 
-                    if(returnValue.Parent.Parent[x][i].Data < posssBuffer && returnValue.Parent.Parent[x][i].Data != posssBuffer){
+                    if(returnValue.Parent.Parent[x][i].Data > posssBuffer && returnValue.Parent.Parent[x][i].Data != posssBuffer){
                         oldValue = returnValue.Parent.Parent[x][i].Data;
                     }
 
 
                     returnValue.Parent.Parent[x][i].setData(neggBuffer + returnValue.Parent.Parent[x][i].Data);
 
-                    if(returnValue.Parent.Parent[x][i].Data < posssBuffer && returnValue.Parent.Parent[x][i].Data != posssBuffer){
+                    if(returnValue.Parent.Parent[x][i].Data > posssBuffer && returnValue.Parent.Parent[x][i].Data != posssBuffer){
                         posssBuffer = returnValue.Parent.Parent[x][i].Data;
                     }
 
@@ -1797,10 +1798,29 @@ public class GameController : MonoBehaviour {
         
         TreeNode<int> minMaxNode = createTreeSheep(roots, 1, true);
 
+        while(minMaxNode.IsRoot == false){
+            minMaxNode = minMaxNode.Parent;
+        }
 
-        print("root._gridSpaceValue" + minMaxNode._gridSpaceValue);
-        print("root.Data" + minMaxNode.Data);
-        print("root.Count" + minMaxNode.Count);
+        // print("root._gridSpaceValue" + minMaxNode._gridSpaceValue);
+        // print("root.Data" + minMaxNode.Data);
+        // print("root.Count" + minMaxNode.Count);
+
+        // print("root[0]._gridSpaceValue" + minMaxNode[6]._gridSpaceValue);
+        // print("root[0].Data" + minMaxNode[6].Data);
+        // print("root[0].Count" + minMaxNode[6].Count);
+
+        // print("root[0][0]._gridSpaceValue" + minMaxNode[6][2]._gridSpaceValue);
+        // print("root[0][0].Data" + minMaxNode[6][2].Data);
+        // print("root[0][0].Count" + minMaxNode[6][2].Count);
+
+        // print("root[0][0][0]._gridSpaceValue" + minMaxNode[6][2][4]._gridSpaceValue);
+        // print("root[0][0][0].Data" + minMaxNode[6][2][4].Data);
+        // print("root[0][0][0].Count" + minMaxNode[6][2][4].Count);
+
+        // print("root[0][0][0][0]._gridSpaceValue" + minMaxNode[6][2][4][0]._gridSpaceValue);
+        // print("root[0][0][0][0].Data" + minMaxNode[6][2][4][0].Data);
+        // print("root[0][0][0][0].Count" + minMaxNode[6][2][4][0].Count);
 
         // print("minMaxNode[6]._gridSpaceValue" + minMaxNode[0]._gridSpaceValue);
         // print("minMaxNode[6].Data" + minMaxNode[0].Data);
