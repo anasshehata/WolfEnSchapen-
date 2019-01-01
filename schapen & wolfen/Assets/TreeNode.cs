@@ -17,6 +17,11 @@ public class TreeNode<T>
     public int _bestMove;
     public int _gridSpaceValue;
     public bool gameOver;
+    public bool maximizingNode;
+    public int sheepNumbr;
+
+
+    public int debugBuff;
 
     public TreeNode(T data)
     {

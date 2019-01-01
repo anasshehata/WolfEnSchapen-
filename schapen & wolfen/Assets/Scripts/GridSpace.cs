@@ -26,7 +26,7 @@ class GridSpace : MonoBehaviour {
     public GridSpaceStatus sheep2OldPos = GridSpaceStatus.SHEEP;
     public GridSpaceStatus sheep3OldPos = GridSpaceStatus.SHEEP;
     public GridSpaceStatus sheep4OldPos = GridSpaceStatus.SHEEP;
-    public bool AITurn = true;
+    public bool AITurn = false;
 
     public bool sheep1 = false;
     public bool sheep2 = false;
@@ -269,6 +269,9 @@ class GridSpace : MonoBehaviour {
                     cursorController.SetCursorStatus(CursorStatus.EMPTY);
                    
                     this.SetGridSpaceStatus (player.playerRole);
+                    if(player.playerRole == GridSpaceStatus.WOLF){
+                        AITurn = true;
+                    }
 
                     
                     print("Case 0");
@@ -293,14 +296,17 @@ class GridSpace : MonoBehaviour {
                         if(currentAlowedGridSpacesSheep[i] == this.gridSpaceNumber){
                             cursorController.SetCursorStatus(CursorStatus.EMPTY);
                             this.SetGridSpaceStatus(player.playerRole);
-                            AITurn = true;
+                            if(player.playerRole == GridSpaceStatus.SHEEP){
+                                AITurn = true;
+                            }
+                            
                             clearSignalAlowedGspace = true;
                             signalDroped = true;
                             sheep1Position = this.gridSpaceNumber;
-                            print("SHEEEEEEP POSSS1 !" + sheep1Position);
-                            print("SHEEEEEEP POSSS2 !" + sheep2Position);
-                            print("SHEEEEEEP POSSS3 !" + sheep3Position);
-                            print("SHEEEEEEP POSSS4 !" + sheep4Position);
+                            // print("SHEEEEEEP POSSS1 !" + sheep1Position);
+                            // print("SHEEEEEEP POSSS2 !" + sheep2Position);
+                            // print("SHEEEEEEP POSSS3 !" + sheep3Position);
+                            // print("SHEEEEEEP POSSS4 !" + sheep4Position);
                         }
                     
                     }
@@ -314,14 +320,16 @@ class GridSpace : MonoBehaviour {
                         if(currentAlowedGridSpacesSheep[i] == this.gridSpaceNumber){
                             cursorController.SetCursorStatus(CursorStatus.EMPTY);
                             this.SetGridSpaceStatus(player.playerRole);
-                            AITurn = true;
+                            if(player.playerRole == GridSpaceStatus.SHEEP){
+                                AITurn = true;
+                            }
                             clearSignalAlowedGspace = true;
                             signalDroped = true;
                             sheep2Position = this.gridSpaceNumber;
-                            print("SHEEEEEEP POSSS1 !" + sheep1Position);
-                            print("SHEEEEEEP POSSS2 !" + sheep2Position);
-                            print("SHEEEEEEP POSSS3 !" + sheep3Position);
-                            print("SHEEEEEEP POSSS4 !" + sheep4Position);
+                            // print("SHEEEEEEP POSSS1 !" + sheep1Position);
+                            // print("SHEEEEEEP POSSS2 !" + sheep2Position);
+                            // print("SHEEEEEEP POSSS3 !" + sheep3Position);
+                            // print("SHEEEEEEP POSSS4 !" + sheep4Position);
                         }
                     }
                 }
@@ -334,14 +342,16 @@ class GridSpace : MonoBehaviour {
                         if(currentAlowedGridSpacesSheep[i] == this.gridSpaceNumber){
                             cursorController.SetCursorStatus(CursorStatus.EMPTY);
                             this.SetGridSpaceStatus(player.playerRole);
-                            AITurn = true;
+                            if(player.playerRole == GridSpaceStatus.SHEEP){
+                                AITurn = true;
+                            }
                             clearSignalAlowedGspace = true;
                             signalDroped = true;
                             sheep3Position = this.gridSpaceNumber;
-                             print("SHEEEEEEP POSSS1 !" + sheep1Position);
-                            print("SHEEEEEEP POSSS2 !" + sheep2Position);
-                            print("SHEEEEEEP POSSS3 !" + sheep3Position);
-                            print("SHEEEEEEP POSSS4 !" + sheep4Position);
+                            // print("SHEEEEEEP POSSS1 !" + sheep1Position);
+                            // print("SHEEEEEEP POSSS2 !" + sheep2Position);
+                            // print("SHEEEEEEP POSSS3 !" + sheep3Position);
+                            // print("SHEEEEEEP POSSS4 !" + sheep4Position);
                         }
                     }
                 }
@@ -353,14 +363,16 @@ class GridSpace : MonoBehaviour {
                        if(currentAlowedGridSpacesSheep[i] == this.gridSpaceNumber){
                             cursorController.SetCursorStatus(CursorStatus.EMPTY);
                             this.SetGridSpaceStatus(player.playerRole);
-                            AITurn = true;
+                            if(player.playerRole == GridSpaceStatus.SHEEP){
+                                AITurn = true;
+                            }                            
                             clearSignalAlowedGspace = true;
                             signalDroped = true;
                             sheep4Position = this.gridSpaceNumber;
-                             print("SHEEEEEEP POSSS1 !" + sheep1Position);
-                            print("SHEEEEEEP POSSS2 !" + sheep2Position);
-                            print("SHEEEEEEP POSSS3 !" + sheep3Position);
-                            print("SHEEEEEEP POSSS4 !" + sheep4Position);
+                            // print("SHEEEEEEP POSSS1 !" + sheep1Position);
+                            // print("SHEEEEEEP POSSS2 !" + sheep2Position);
+                            // print("SHEEEEEEP POSSS3 !" + sheep3Position);
+                            // print("SHEEEEEEP POSSS4 !" + sheep4Position);
                         }
                     }
                 }

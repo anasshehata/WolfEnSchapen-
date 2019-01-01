@@ -6,10 +6,10 @@ using System.Linq;
 
 public class GameController : MonoBehaviour {
 
-	public GameObject gridArea;
-	public GameObject gridSpaceButton;
-	private List<GridSpace> gridSpaces = new List<GridSpace>();
-    private int foxPos = 60;
+    public GameObject gridArea;
+    public GameObject gridSpaceButton;
+    private List<GridSpace> gridSpaces = new List<GridSpace>();
+    private int foxPos = 60 ;
     private int sheep1Pos = 1;
     private int sheep2Pos = 3;
     private int sheep3Pos = 5;
@@ -20,6 +20,7 @@ public class GameController : MonoBehaviour {
     private int sheep4buffer = 7;
     private int foxPosClone;
     private List<int> sheepList = new List<int>(){ 1, 3, 5, 7 };
+    private List<int> sheepListClone = new List<int>(){ 1, 3, 5, 7 };
     private int sheepturnBuffer = 0;
     private int lastclickedBuffer = -1;
     private int lastDroppedBuffer = -1;
@@ -30,22 +31,29 @@ public class GameController : MonoBehaviour {
 
 
     /*
-	 * Initialise the buttons for the grid.
-	 * */
+     * Initialise the buttons for the grid.
+     * */
     void Awake() {
-		int k = 0;
-		for(int i = 0; i < 8; i++) {
-			for (int j = 0; j < 8; j++) {
-				GameObject tempButton = Instantiate (gridSpaceButton);
-				tempButton.transform.SetParent(gridArea.transform);
-				tempButton.transform.localPosition = new Vector2((-256 + (64 * j)), (256 - (64 * i)));
-				tempButton.transform.GetComponentInChildren<Text>().text = k.ToString();
+        int k = 0;
+        for(int i = 0; i < 8; i++) {
+            for (int j = 0; j < 8; j++) {
+                GameObject tempButton = Instantiate (gridSpaceButton);
+                tempButton.transform.SetParent(gridArea.transform);
+                tempButton.transform.localPosition = new Vector2((-256 + (64 * j)), (256 - (64 * i)));
+                tempButton.transform.GetComponentInChildren<Text>().text = k.ToString();
+                tempButton.transform.GetComponentInChildren<Text>().color = Color.red;
+                // Position gridNumbers on button
+                tempButton.transform.GetComponentInChildren<Text>().transform.position = new Vector3(tempButton.transform.GetComponentInChildren<Text>().transform.position.x + 4   ,tempButton.transform.GetComponentInChildren<Text>().transform.position.y -4,tempButton.transform.GetComponentInChildren<Text>().transform.position.z);
          
 
-				GridSpace tempGridSpace = tempButton.GetComponent<GridSpace> ();
-				tempGridSpace.SetGridSpaceNumber(k);
+                GridSpace tempGridSpace = tempButton.GetComponent<GridSpace> ();
+                tempGridSpace.SetGridSpaceNumber(k);
                 //tempGridSpace.SetAITurn(true);
-                tempGridSpace.SetAITurn(true);
+                Player player = GameObject.Find("/Player").GetComponent<Player>();
+                if(GridSpaceStatus.SHEEP == player.playerRole){
+                    tempGridSpace.SetAITurn(true);
+                }
+                
 
                 tempGridSpace.SetSheep1Position(1);
                 tempGridSpace.SetSheep2Position(3);
@@ -187,20 +195,20 @@ public class GameController : MonoBehaviour {
                 
 
                 tempGridSpace.SetGridSpaceStatus(GridSpaceStatus.EMPTY);
-				tempButton.GetComponent<Button> ().onClick.AddListener (tempButton.GetComponent<GridSpace>().ButtonClick);
+                tempButton.GetComponent<Button> ().onClick.AddListener (tempButton.GetComponent<GridSpace>().ButtonClick);
 
 
 
                 gridSpaces.Add (tempButton.GetComponent<GridSpace>());
-				k++;
+                k++;
 
 
 
             }
-		}
+        }
 
-		StartGame ();
-	}
+        StartGame ();
+    }
 
     public  bool AreListsEqual(IList<int> list1, IList<int> list2)
     {
@@ -316,8 +324,21 @@ public class GameController : MonoBehaviour {
         return α
     }*/
 
-    public TreeNode<int> createTree(TreeNode<int> root, int depth, bool AImove)
+    public List<int> nonSheepAlowedGridspace(int pos){
+        List<int> totalNoSheep = new List<int>(){};
+        for (int i = 0; i < gridSpaces[pos].GetAlowedGridSpaces().Count; i++)
+            {
+                if(gridSpaces[gridSpaces[pos].GetAlowedGridSpaces()[i]].GetGridSpaceStatus() != GridSpaceStatus.SHEEP){
+                    totalNoSheep.Add(gridSpaces[pos].GetAlowedGridSpaces()[i]);
+                }
+            }
+        return totalNoSheep;
+    } 
+
+    public TreeNode<int> createTreeWolf(TreeNode<int> root, int depth, bool maximizingPlayer)
     {
+        
+
         ArrayList row0 = new ArrayList();
         row0.Add(56);
         row0.Add(58);
@@ -371,11 +392,21 @@ public class GameController : MonoBehaviour {
         int counter = 0;
         TreeNode<int> returnValue = new TreeNode<int>(int.MinValue);
 
+
         
+        
+        // print("Debug2: " + sheepList[1]);
+        // print("Debug3: " + sheepList[2]);
+        // print("Debug4: " + sheepList[3]);
      
         //print("@@" + foxPosClone);
         if (depth == 1)
         {
+            // print("sheepListCLone [0]" + sheepListClone[0]);
+            // print("sheepListCLone [1]" + sheepListClone[1]);
+            // print("sheepListCLone [2]" + sheepListClone[2]);
+            // print("sheepListCLone [3]" + sheepListClone[3]);
+            root.maximizingNode = true;
             //print("!!!!!!!!!!!!!!!!!!! DEPTH == 1 !!!!!!!!!!!!!!!!!!" + foxPosClone);
            // print("FOXPOSCLONE"+foxPosClone);
             if( foxPos == 1 ||
@@ -388,67 +419,140 @@ public class GameController : MonoBehaviour {
 
             for (int i = 0; i < gridSpaces[foxPosClone].GetAlowedGridSpaces().Count; i++)
             {
-                print("DEBUG! " + foxPosClone);
-                print("DEBUG! sh1 " + sheepList[0]);
-                print("DEBUG! sh2 " + sheepList[1]);
-                print("DEBUG! sh3 " + sheepList[2]);
-                print("DEBUG! sh4 " + sheepList[3]);
+                
                 
                 
 
                 if (row0.Contains(gridSpaces[foxPosClone].GetAlowedGridSpaces()[i]))
                 {
 
-                    root.AddChild(1);
-                   // root.setData(1);
-                    root._bestMove = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                    if( row0.Contains(sheepList.Min()) && gridSpaces[gridSpaces[foxPosClone].GetAlowedGridSpaces()[i]].GetGridSpaceStatus() == GridSpaceStatus.EMPTY){
+                        root.AddChild(1001);
+                        // root.setData(1);
+                        root._bestMove = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
                     
-                    root[i]._gridSpaceValue = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                        root[i]._gridSpaceValue = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+
+                        root[i].maximizingNode = false; 
+                    }else{
+                        root.AddChild(1);
+                        // root.setData(1);
+                        root._bestMove = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                    
+                        root[i]._gridSpaceValue = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+
+                        root[i].maximizingNode = false;
+                    }
+
+                    
                 }
                 if (row1.Contains(gridSpaces[foxPosClone].GetAlowedGridSpaces()[i]))
                 {
-                    root.AddChild(2);
-                   // root.setData(2);
-                    root._bestMove = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
-                    root[i]._gridSpaceValue = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+
+                    if( row1.Contains(sheepList.Min()) && gridSpaces[gridSpaces[foxPosClone].GetAlowedGridSpaces()[i]].GetGridSpaceStatus() == GridSpaceStatus.EMPTY){
+                        root.AddChild(1002);
+                        // root.setData(2);
+                        root._bestMove = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                        root[i]._gridSpaceValue = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                        root[i].maximizingNode = false;
+                    }
+                    else{
+                        root.AddChild(2);
+                        // root.setData(2);
+                        root._bestMove = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                        root[i]._gridSpaceValue = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                        root[i].maximizingNode = false;
+                    }
+                    
                 }
                 if (row2.Contains(gridSpaces[foxPosClone].GetAlowedGridSpaces()[i]))
                 {
-                    root.AddChild(3);
-                    //root.setData(3);
-                    root._bestMove = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
-                    root[i]._gridSpaceValue = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                    if( row2.Contains(sheepList.Min()) && gridSpaces[gridSpaces[foxPosClone].GetAlowedGridSpaces()[i]].GetGridSpaceStatus() == GridSpaceStatus.EMPTY){
+                        root.AddChild(1003);
+                        // root.setData(2);
+                        root._bestMove = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                        root[i]._gridSpaceValue = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                        root[i].maximizingNode = false;
+                    }
+                    else{
+                        root.AddChild(3);
+                        // root.setData(2);
+                        root._bestMove = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                        root[i]._gridSpaceValue = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                        root[i].maximizingNode = false;
+                    }
                 }
                 if (row3.Contains(gridSpaces[foxPosClone].GetAlowedGridSpaces()[i]))
                 {
-
-                    root.AddChild(4);
-                    //root.setData(4);
-                    root._bestMove = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
-                    root[i]._gridSpaceValue = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                    if( row3.Contains(sheepList.Min()) && gridSpaces[gridSpaces[foxPosClone].GetAlowedGridSpaces()[i]].GetGridSpaceStatus() == GridSpaceStatus.EMPTY){
+                        root.AddChild(1004);
+                        // root.setData(2);
+                        root._bestMove = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                        root[i]._gridSpaceValue = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                        root[i].maximizingNode = false;
+                    }
+                    else{
+                        root.AddChild(4);
+                        // root.setData(2);
+                        root._bestMove = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                        root[i]._gridSpaceValue = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                        root[i].maximizingNode = false;
+                    }
                 }
                 if (row4.Contains(gridSpaces[foxPosClone].GetAlowedGridSpaces()[i]))
                 {
-                    root.AddChild(5);
-                   // root.setData(5);
-                    root._bestMove = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
-                    root[i]._gridSpaceValue = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                    if( row4.Contains(sheepList.Min()) && gridSpaces[gridSpaces[foxPosClone].GetAlowedGridSpaces()[i]].GetGridSpaceStatus() == GridSpaceStatus.EMPTY){
+                        root.AddChild(1005);
+                        // root.setData(2);
+                        root._bestMove = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                        root[i]._gridSpaceValue = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                        root[i].maximizingNode = false;
+                    }
+                    else{
+                        root.AddChild(5);
+                        // root.setData(2);
+                        root._bestMove = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                        root[i]._gridSpaceValue = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                        root[i].maximizingNode = false;
+                    }
+
                 }
                 if (row5.Contains(gridSpaces[foxPosClone].GetAlowedGridSpaces()[i]))
                 {
-                    root.AddChild(6);
-                    //root.setData(6);
-                    root._bestMove = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
-                    root[i]._gridSpaceValue = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                   if( row5.Contains(sheepList.Min()) && gridSpaces[gridSpaces[foxPosClone].GetAlowedGridSpaces()[i]].GetGridSpaceStatus() == GridSpaceStatus.EMPTY){
+                        root.AddChild(1006);
+                        // root.setData(2);
+                        root._bestMove = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                        root[i]._gridSpaceValue = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                        root[i].maximizingNode = false;
+                    }
+                    else{
+                        root.AddChild(6);
+                        // root.setData(2);
+                        root._bestMove = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                        root[i]._gridSpaceValue = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                        root[i].maximizingNode = false;
+                    }
+
 
                 }
                 if (row6.Contains(gridSpaces[foxPosClone].GetAlowedGridSpaces()[i]))
                 {
-                    //print("TRUE!! &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&");
-                    root.AddChild(7);
-                    //root.setData(7);
-                    root._bestMove = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
-                    root[i]._gridSpaceValue = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                    if( row6.Contains(sheepList.Min()) && gridSpaces[gridSpaces[foxPosClone].GetAlowedGridSpaces()[i]].GetGridSpaceStatus() == GridSpaceStatus.EMPTY){
+                        root.AddChild(1007);
+                        // root.setData(2);
+                        root._bestMove = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                        root[i]._gridSpaceValue = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                        root[i].maximizingNode = false;
+                    }
+                    else{
+                        root.AddChild(7);
+                        // root.setData(2);
+                        root._bestMove = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                        root[i]._gridSpaceValue = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                        root[i].maximizingNode = false;
+                    }
+
                 }
 
 
@@ -460,83 +564,252 @@ public class GameController : MonoBehaviour {
                     //root.setData(int.MaxValue);
                     root._bestMove = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
                     root[i]._gridSpaceValue = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                    root[i].maximizingNode = false;
+
                 }
                
-
+                // print("***************************" + nonSheepAlowedGridspace(root[0]._gridSpaceValue).Count);
 
                 //print(largestHeuristicValue);
                 //print("!!!!!!!!!!!!!!!!!!!!!!!!!!!--------------------!!!!!!!!!!!!!!!!!!!!!!!!!" + root.Data);
             }
 
             //If sheep is holding a straight line
-            if(row7.Contains(sheepList[0]) && row7.Contains(sheepList[1]) && row7.Contains(sheepList[2])&& row7.Contains(sheepList[3]) 
-                || row6.Contains(sheepList[0]) && row6.Contains(sheepList[1]) && row6.Contains(sheepList[2])&& row6.Contains(sheepList[3])
-                || row5.Contains(sheepList[0]) && row5.Contains(sheepList[1]) && row5.Contains(sheepList[2])&& row5.Contains(sheepList[3])
-                || row4.Contains(sheepList[0]) && row4.Contains(sheepList[1]) && row4.Contains(sheepList[2])&& row4.Contains(sheepList[3])
-                || row3.Contains(sheepList[0]) && row3.Contains(sheepList[1]) && row3.Contains(sheepList[2])&& row3.Contains(sheepList[3])
-                || row2.Contains(sheepList[0]) && row2.Contains(sheepList[1]) && row2.Contains(sheepList[2])&& row2.Contains(sheepList[3])
-                || row1.Contains(sheepList[0]) && row1.Contains(sheepList[1]) && row1.Contains(sheepList[2])&& row1.Contains(sheepList[3])
-                || row0.Contains(sheepList[0]) && row0.Contains(sheepList[1]) && row0.Contains(sheepList[2])&& row0.Contains(sheepList[3]))
+            if(row7.Contains(sheepListClone[0]) && row7.Contains(sheepListClone[1]) && row7.Contains(sheepListClone[2])&& row7.Contains(sheepListClone[3]) 
+                || row6.Contains(sheepListClone[0]) && row6.Contains(sheepListClone[1]) && row6.Contains(sheepListClone[2])&& row6.Contains(sheepListClone[3])
+                || row5.Contains(sheepListClone[0]) && row5.Contains(sheepListClone[1]) && row5.Contains(sheepListClone[2])&& row5.Contains(sheepListClone[3])
+                || row4.Contains(sheepListClone[0]) && row4.Contains(sheepListClone[1]) && row4.Contains(sheepListClone[2])&& row4.Contains(sheepListClone[3])
+                || row3.Contains(sheepListClone[0]) && row3.Contains(sheepListClone[1]) && row3.Contains(sheepListClone[2])&& row3.Contains(sheepListClone[3])
+                || row2.Contains(sheepListClone[0]) && row2.Contains(sheepListClone[1]) && row2.Contains(sheepListClone[2])&& row2.Contains(sheepListClone[3])
+                || row1.Contains(sheepListClone[0]) && row1.Contains(sheepListClone[1]) && row1.Contains(sheepListClone[2])&& row1.Contains(sheepListClone[3])
+                || row0.Contains(sheepListClone[0]) && row0.Contains(sheepListClone[1]) && row0.Contains(sheepListClone[2])&& row0.Contains(sheepListClone[3]))
             {
-                print("----> straightLine <----");
-                for (int sheepNr = 0; sheepNr < sheepList.Count; sheepNr++)
+                // print("----> straightLine <----");
+                for (int sheepNr = 0; sheepNr < sheepListClone.Count; sheepNr++)
                 {
                     //Als schaap in een hoek zit; geef hem de hoogste score;
-                    if(gridSpaces[sheepList[sheepNr]].GetMmAlowedGridSpacesSheep().Count == 1 && gridSpaces[gridSpaces[sheepList[sheepNr]].GetMmAlowedGridSpacesSheep()[0]].GetGridSpaceStatus() == GridSpaceStatus.EMPTY){
-                        print("corner! -----------------");
+                    if(gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep().Count == 1 && sheepListClone.Contains(gridSpaces[gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[0]].GetGridSpaceNumber()) == false){
+                        // print("corner! -----------------");
                         for (int rootChildren = 0; rootChildren < root.Count; rootChildren++)
                         {
-                            root[rootChildren].AddChild(-10);
-                            root[rootChildren][root[rootChildren].Count-1]._gridSpaceValue = gridSpaces[sheepList[sheepNr]].GetMmAlowedGridSpacesSheep()[0];
+                            if(root[rootChildren]._gridSpaceValue != gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[0] ){
 
+                                if(nonSheepAlowedGridspace(root[rootChildren]._gridSpaceValue).Count == 1 && nonSheepAlowedGridspace(root[rootChildren]._gridSpaceValue)[0] == gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[0]){
+                                    root[rootChildren].AddChild(int.MinValue);
+                                    root[rootChildren][root[rootChildren].Count-1]._gridSpaceValue = gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[0];
+                                    root[rootChildren][root[rootChildren].Count-1].maximizingNode = true;
+                                    root[rootChildren][root[rootChildren].Count-1].sheepNumbr = sheepNr;
+
+
+                                    // print("--Debug--");
+                                }
+                                else{
+                                    root[rootChildren].AddChild(-10);
+                                    root[rootChildren][root[rootChildren].Count-1]._gridSpaceValue = gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[0];
+                                    root[rootChildren][root[rootChildren].Count-1].maximizingNode = true;
+                                    root[rootChildren][root[rootChildren].Count-1].sheepNumbr = sheepNr;
+
+                                    // print("--Debug--");
+
+                                    
+                                }
+                                
+                               
+                            }
                         }
                     }else{
 
                         for (int rootChildren = 0; rootChildren < root.Count; rootChildren++)
                         {
-                            for(int alowedgSpacesSheep = 0; alowedgSpacesSheep < gridSpaces[sheepList[sheepNr]].GetMmAlowedGridSpacesSheep().Count; alowedgSpacesSheep++ ){
-                                root[rootChildren].AddChild(-1);
-                                root[rootChildren][root[rootChildren].Count-1]._gridSpaceValue = gridSpaces[sheepList[sheepNr]].GetMmAlowedGridSpacesSheep()[alowedgSpacesSheep];
-                                //print(gridSpaces[sheepList[sheepNr]].GetMmAlowedGridSpacesSheep()[alowedgSpacesSheep]);
-                            }
-                          
+                            for(int alowedgSpacesSheep = 0; alowedgSpacesSheep < gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep().Count; alowedgSpacesSheep++ ){
+                                if(root[rootChildren]._gridSpaceValue != gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[alowedgSpacesSheep] ){
 
+                                    if(nonSheepAlowedGridspace(root[rootChildren]._gridSpaceValue).Count == 1 && nonSheepAlowedGridspace(root[rootChildren]._gridSpaceValue)[0] == gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[alowedgSpacesSheep]){
+                                        root[rootChildren].AddChild(int.MinValue);
+                                        root[rootChildren][root[rootChildren].Count-1]._gridSpaceValue = gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[alowedgSpacesSheep];
+                                        root[rootChildren][root[rootChildren].Count-1].maximizingNode = true;
+                                        root[rootChildren][root[rootChildren].Count-1].sheepNumbr = sheepNr;
+
+                                        // print("--Debug--");
+                                    }
+                                    else{
+                                        root[rootChildren].AddChild(-1);
+                                        root[rootChildren][root[rootChildren].Count-1]._gridSpaceValue = gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[alowedgSpacesSheep];
+                                        root[rootChildren][root[rootChildren].Count-1].maximizingNode = true;
+                                        root[rootChildren][root[rootChildren].Count-1].sheepNumbr = sheepNr;
+
+                                        // print("--Debug--");
+                                    }
+                                    
+                                }
+                                
+                                //print(gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[alowedgSpacesSheep]);
+                            }
                         }
                     }
 
                 }
             }else{
-                for (int sheepNr = 0; sheepNr < sheepList.Count; sheepNr++){       
-                    if(gridSpaces[sheepList[sheepNr]].GetMmAlowedGridSpacesSheep().Count == 2){
+                for (int sheepNr = 0; sheepNr < sheepListClone.Count; sheepNr++){       
+                    if(gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep().Count == 2){
+                        
                         for (int rootChildren = 0; rootChildren < root.Count; rootChildren++){
-                            for(int alowedgSpacesSheep = 0; alowedgSpacesSheep < gridSpaces[sheepList[sheepNr]].GetMmAlowedGridSpacesSheep().Count; alowedgSpacesSheep++ ){
+                            int totalSheepInAlowedgSPace = 0;
+                            for(int alowedgSpacesSheep = 0; alowedgSpacesSheep < gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep().Count; alowedgSpacesSheep++ ){
                                 //Juist als er een is die niet empty is dan is dat de stap die schaap het meest punten hoort op te leveren;
-                                if( gridSpaces[gridSpaces[sheepList[sheepNr]].GetMmAlowedGridSpacesSheep()[alowedgSpacesSheep]].GetGridSpaceStatus() == GridSpaceStatus.EMPTY){
-                                    root[rootChildren].AddChild(-5);
-                                    root[rootChildren][root[rootChildren].Count-1]._gridSpaceValue = gridSpaces[sheepList[sheepNr]].GetMmAlowedGridSpacesSheep()[alowedgSpacesSheep];
+                                if( sheepListClone.Contains(gridSpaces[gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[alowedgSpacesSheep]].GetGridSpaceNumber()) == true){
+                                    totalSheepInAlowedgSPace +=1;
+                                    
+                                }
+                                if(totalSheepInAlowedgSPace == 1 && alowedgSpacesSheep == 1){
+                                    if(root[rootChildren]._gridSpaceValue != gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[alowedgSpacesSheep-1] ){
+                                        if(sheepListClone.Contains(gridSpaces[gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[alowedgSpacesSheep-1]].GetGridSpaceNumber()) == false){
+                                            if(nonSheepAlowedGridspace(root[rootChildren]._gridSpaceValue).Count == 1 && nonSheepAlowedGridspace(root[rootChildren]._gridSpaceValue)[0] == gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[alowedgSpacesSheep-1]){
+                                                root[rootChildren].AddChild(int.MinValue);
+                                                root[rootChildren][root[rootChildren].Count-1]._gridSpaceValue = gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[alowedgSpacesSheep-1];
+                                                root[rootChildren][root[rootChildren].Count-1].maximizingNode = true;
+                                                root[rootChildren][root[rootChildren].Count-1].sheepNumbr = sheepNr;
+
+                                                // print("--Debug--");
+                                            }
+                                            else{
+                                                root[rootChildren].AddChild(-10);
+                                                root[rootChildren][root[rootChildren].Count-1]._gridSpaceValue = gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[alowedgSpacesSheep-1];
+                                                root[rootChildren][root[rootChildren].Count-1].maximizingNode = true;
+                                                root[rootChildren][root[rootChildren].Count-1].sheepNumbr = sheepNr;
+
+                                                // print("--Debug--");
+                                            }
+
+                                            
+                                        }
+                                    }
+                                }
+                                if(totalSheepInAlowedgSPace == 1 && alowedgSpacesSheep == 0){
+                                    if(root[rootChildren]._gridSpaceValue != gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[alowedgSpacesSheep+1] ){
+                                        if(sheepListClone.Contains(gridSpaces[gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[alowedgSpacesSheep+1]].GetGridSpaceNumber()) == false){
+                                            if(nonSheepAlowedGridspace(root[rootChildren]._gridSpaceValue).Count == 1 && nonSheepAlowedGridspace(root[rootChildren]._gridSpaceValue)[0] == gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[alowedgSpacesSheep+1]){
+                                                root[rootChildren].AddChild(int.MinValue);
+                                                root[rootChildren][root[rootChildren].Count-1]._gridSpaceValue = gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[alowedgSpacesSheep+1];
+                                                root[rootChildren][root[rootChildren].Count-1].maximizingNode = true;
+                                                root[rootChildren][root[rootChildren].Count-1].sheepNumbr = sheepNr;
+
+                                                // print("--Debug--");
+                                            }
+                                            else{
+                                                root[rootChildren].AddChild(-10);
+                                                root[rootChildren][root[rootChildren].Count-1]._gridSpaceValue = gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[alowedgSpacesSheep+1];
+                                                root[rootChildren][root[rootChildren].Count-1].maximizingNode = true;
+                                                root[rootChildren][root[rootChildren].Count-1].sheepNumbr = sheepNr;
+
+                                                // print("--Debug--");
+                                            }
+                                            
+                                        }   
+                                    }
                                 }
                             }
+                            if(sheepListClone.Contains(gridSpaces[gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[0]].GetGridSpaceNumber()) == false && sheepListClone.Contains(gridSpaces[gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[1]].GetGridSpaceNumber()) == false){
+                                if(root[rootChildren]._gridSpaceValue != gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[0] ){
+                                    if(nonSheepAlowedGridspace(root[rootChildren]._gridSpaceValue).Count == 1 && nonSheepAlowedGridspace(root[rootChildren]._gridSpaceValue)[0] == gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[0]){
+                                        root[rootChildren].AddChild(int.MinValue);
+                                        root[rootChildren][root[rootChildren].Count-1]._gridSpaceValue = gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[0];
+                                        root[rootChildren][root[rootChildren].Count-1].maximizingNode = true;
+                                        root[rootChildren][root[rootChildren].Count-1].sheepNumbr = sheepNr;
+
+                                        // print("--Debug--");
+                                    }
+
+                                    else{
+
+                                        root[rootChildren].AddChild(-1);
+                                        root[rootChildren][root[rootChildren].Count-1]._gridSpaceValue = gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[0];
+                                        root[rootChildren][root[rootChildren].Count-1].maximizingNode = true;
+                                        root[rootChildren][root[rootChildren].Count-1].sheepNumbr = sheepNr;
+                                        
+
+
+                                        // print("--Debug--");
+                                    }
+                                    
+                                }
+                                if(root[rootChildren]._gridSpaceValue != gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[1] ){
+                                    if(nonSheepAlowedGridspace(root[rootChildren]._gridSpaceValue).Count == 1 && nonSheepAlowedGridspace(root[rootChildren]._gridSpaceValue)[0] == gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[1]){
+                                        root[rootChildren].AddChild(int.MinValue);
+                                        root[rootChildren][root[rootChildren].Count-1]._gridSpaceValue = gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[1];
+                                        root[rootChildren][root[rootChildren].Count-1].maximizingNode = true;
+                                        root[rootChildren][root[rootChildren].Count-1].sheepNumbr = sheepNr;
+
+                                        // print("--Debug--");
+                                    }
+                                    else{
+                                        root[rootChildren].AddChild(-1);
+                                        root[rootChildren][root[rootChildren].Count-1]._gridSpaceValue = gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[1];
+                                        root[rootChildren][root[rootChildren].Count-1].maximizingNode = true;
+                                        root[rootChildren][root[rootChildren].Count-1].sheepNumbr = sheepNr;
+
+                                        // print("--Debug--");
+                                    }
+                                    
+                                }
+                            }  
                         }  
                     }
                 }
             }
             
+            int lowestHeuristicValue = int.MaxValue;
+            int posBuffer = 0;
+            int negBuffer = 0;
+            // append correct value to leafNode.Parrent
+            for (int y = 0; y < root.Count; y++)
+            {
+                if(root[y].Data >= 0 && root[y].Data != posBuffer){
+                    posBuffer = root[y].Data;
+                }
+                for(int z = 0; z < root[y].Count; z++){
+                    if (root[y].Data > root[y][z].Data)
+                    {
+
+                        if(root[y][z].Data < 0 && root[y][z].Data != negBuffer){
+                            negBuffer = root[y][z].Data;
+                        }
+
+                        lowestHeuristicValue = root[y][z].Data;
+                        // print("---------------------------------------" + posBuffer );
+
+                        
+                        root[y].setData(  root[y][z].Data + posBuffer);
+                        
+
+                    }
+
+                    // if(root[y][z].IsLeaf == false){
+                    //     for(int x = 0; x < root[y][z].Count; x++){
+                    //         if(root[y][z].Data < root [y][z][x].Data){
+                    //             root[y][z].setData(  root[y][z][x].Data + negBuffer);
+                    //         }
+                    //     }
+                    // }
+                }
+            }
+
+
             
-
-
-
             //print("******************* WHATSROOTS DATA???? ************** " + root[y]);
             int largestHeuristicValue = int.MinValue;
             int blockedSpaces = 0;
             for (int y = 0; y < root.Count; y++)
             {
-                if (root.Data < root[y].Data && gridSpaces[root[y]._gridSpaceValue].GetGridSpaceStatus() != GridSpaceStatus.SHEEP)
-                {
-                    largestHeuristicValue = root[y].Data;
-                    root._bestMove = root[y]._gridSpaceValue;
-                    root.setData(root[y].Data);
 
-                }
+                // asign root best move... Do this in MoveWolfAI
+                // if (root.Data < root[y].Data && gridSpaces[root[y]._gridSpaceValue].GetGridSpaceStatus() != GridSpaceStatus.SHEEP)
+                // {
+                //     largestHeuristicValue = root[y].Data;
+                //     root._bestMove = root[y]._gridSpaceValue;
+                //     root.setData(root[y].Data);
+
+                // }
                 if(gridSpaces[root[y]._gridSpaceValue].GetGridSpaceStatus() == GridSpaceStatus.SHEEP){
                     blockedSpaces+=1;    
                 }
@@ -549,15 +822,21 @@ public class GameController : MonoBehaviour {
                 }
 
             }
+            
             return root;
         }
         else
         {
 
-            createTree(root, 1, true);
-            
-            //print("!!!!!!!!!!!!!!!!!!! DEPTH == 2 !!!!!!!!!!!!!!!!!!");
+            TreeNode<int> baseCaseNode = createTreeWolf(root, 1, true);
+            int sheep1Posbuff = sheepListClone[0];
+            int sheep2Posbuff = sheepListClone[1];
+            int sheep3Posbuff = sheepListClone[2];
+            int sheep4Posbuff = sheepListClone[3];
 
+            int previousValueBuff =0;
+            int maximizingBuff = -1000;
+            
             for (int i = 0; i < root.Count; i++)
             {
                 // print("foxPOSCLONEAlgorithm " + root._children[i]._gridSpaceValue);
@@ -565,32 +844,767 @@ public class GameController : MonoBehaviour {
                 {
                     foxPosClone = root._children[i]._gridSpaceValue;
                 }
-                
-                
-                //createTree(root._children[i], depth - 1);
-                returnValue = createTree(root._children[i], depth - 1, true);
-                if(returnValue.Data > returnValue.Parent.Data)
+                //sheepNr count from 0 to 3 (sheep1 to sheep4);
+                for (int y = 0; y < root._children[i].Count; y++)
                 {
-                    returnValue.Parent.setData(returnValue.Data);
+                    if(root._children[i]._children[y]._gridSpaceValue > -1){
+                        if(root._children[i]._children[y].sheepNumbr == 0){
+                            sheepListClone[0] = root._children[i]._children[y]._gridSpaceValue;
+                            sheepListClone[1] = sheep2Posbuff;
+                            sheepListClone[2] = sheep3Posbuff;
+                            sheepListClone[3] = sheep4Posbuff;
+                        }
+                        if(root._children[i]._children[y].sheepNumbr == 1){
+                            sheepListClone[1] = root._children[i]._children[y]._gridSpaceValue;
+
+
+                            sheepListClone[0] = sheep1Posbuff;
+                            sheepListClone[2] = sheep3Posbuff;
+                            sheepListClone[3] = sheep4Posbuff;
+                        }
+                        if(root._children[i]._children[y].sheepNumbr == 2){
+                            sheepListClone[2] = root._children[i]._children[y]._gridSpaceValue;
+
+                            sheepListClone[0] = sheep1Posbuff;
+                            sheepListClone[1] = sheep2Posbuff;
+                            sheepListClone[3] = sheep4Posbuff;
+                        }
+                        if(root._children[i]._children[y].sheepNumbr == 3){
+                            sheepListClone[3] = root._children[i]._children[y]._gridSpaceValue;
+
+                            sheepListClone[0] = sheep1Posbuff;
+                            sheepListClone[1] = sheep2Posbuff;
+                            sheepListClone[2] = sheep3Posbuff;
+                        }
+                    }
+
+
+
+
+                    returnValue = createTreeWolf(root._children[i]._children[y], depth - 1, false);
+
+                   
+                    // print( "------------------------/////////////////////////////"+ returnValue._gridSpaceValue);
+                    // print( "000000000000000000000000:  " + returnValue.Data);
+
+
+
+                    // for(int p = 0; p < returnValue.Count; p++){
+
+
+                    //     // print( "------------------------/////////////////////////////[2]"+ returnValue[p]._gridSpaceValue);
+                    //     // print( "000000000000000000000000:  [2]" + returnValue[p].Data);
+
+                    //     if( maximizingBuff < returnValue[p].Data){
+                    //         maximizingBuff = returnValue[p].Data;
+                            
+                    //     }
+
+                    //     previousValueBuff = returnValue.Data;
+                        
+                        
+                        
+                        
+                    // }
+                    // returnValue.setData((maximizingBuff + previousValueBuff));
+                    // print("DEBUGGGGGGG" + returnValue.Data);
+
+                    // print("returnValue.Parent.Data " + returnValue.Parent.Data);
+                    // print("previousValueBuff" +yyyyyyyyyyyyyyyyyyyyyyyyy)
+                    // print("previousValueBuff " + (previousValueBuff * -1) + returnValue.Parent.Data);
+                    // returnValue.Parent.setData(previousValueBuff * -1);
+                    
+                    // maximizingBuff = -1000;
+                    // previousValueBuff = 0;
+                    
+
+
                 }
+
+
+                
+                //createTreeWolf(root._children[i], depth - 1);
+                
+                // if(returnValue.Data < returnValue.Parent.Data && returnValue.Parent.maximizingNode == false)
+                // {
+                //     returnValue.Parent.setData(99);
+                // }
+                // if(returnValue.Data > returnValue.Parent.Data && returnValue.Parent.maximizingNode == true)
+                // {
+                //     returnValue.Parent.setData(99);
+                // }
             }
 
+            //--start
+            
+            for(int x = 0; x < returnValue.Parent.Parent.Count; x++){
+                int posssBuffer = + 1000;
+                int oldValue = -1000;
+                for(int i = 0; i < returnValue.Parent.Parent[x].Count; i++){
+
+                    int neggBuffer = -1000;
+                    
+                    for(int y = 0; y < returnValue.Parent.Parent[x][i].Count; y++){
+
+                        
+                        if(returnValue.Parent.Parent[x][i][y].Data > neggBuffer && returnValue.Parent.Parent[x][i][y].Data != neggBuffer){
+                            //print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" + returnValue.Parent.Parent[x][i][y].Data );
+                            neggBuffer = returnValue.Parent.Parent[x][i][y].Data;
+                        }
+                    }
+
+                    if(returnValue.Parent.Parent[x][i].Data < posssBuffer && returnValue.Parent.Parent[x][i].Data != posssBuffer){
+                        oldValue = returnValue.Parent.Parent[x][i].Data;
+                    }
+
+                    // print("*Debug[x][i]" + returnValue.Parent.Parent[x][i].Data);
+                    // print("negBuffer" + neggBuffer);
+                    returnValue.Parent.Parent[x][i].setData(neggBuffer + returnValue.Parent.Parent[x][i].Data);
+
+                    if(returnValue.Parent.Parent[x][i].Data < posssBuffer && returnValue.Parent.Parent[x][i].Data != posssBuffer){
+                        posssBuffer = returnValue.Parent.Parent[x][i].Data;
+                    }
+
+                }
+                // print("posBuffer" + posssBuffer);
+                // print("oldValue" + (((oldValue * -1) + returnValue.Parent.Parent[x].Data) + posssBuffer)) ;
+                returnValue.Parent.Parent[x].setData((((oldValue * -1) + returnValue.Parent.Parent[x].Data) + posssBuffer));
+            }
+
+            // for(int i = 0; i < returnValue.Parent.Count; i++){
+            //     //print("---i" + returnValue.Parent[i].Data);
+            //     for(int y = 0; y < returnValue.Parent[i].Count; y++){
+            //         if(returnValue.Parent[i].Data < returnValue.Parent[i][y].Data && returnValue.Parent[i][y].maximizingNode == false){
+            //             returnValue.Parent[i].setData(-20);
+            //             print("***************************************************************************" + returnValue.Parent[i].Data);
+            //             print("********************************************************************Gspace" + returnValue.Parent[i]._gridSpaceValue);
+            //             print("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" + returnValue.Parent[i][y].Data);
+
+
+
+            //         }
+            //         //print(returnValue.Parent[i].Data < returnValue.Parent[i][y].Data && returnValue.Parent[i][y].maximizingNode == false);
+            //     }
+                
+            // }
+            // ---end
 
             /*for (int i = 0; i < gridSpaces[foxPos].GetAlowedGridSpaces().Count; i++)
             {
 
 
                 //root._bestMove = possibleMove;
-                //createTree(root[i], depth - 1);
+                //createTreeWolf(root[i], depth - 1);
                 //print("COUNTER!!" + i);
                 //counter++;
             }*/
-            return returnValue.Parent;
+            return returnValue;
         }
         
             
             //return root;
     }
+
+
+
+    public TreeNode<int> createTreeSheep(TreeNode<int> root, int depth, bool maximizingPlayer)
+    {
+        
+
+        ArrayList row0 = new ArrayList();
+        row0.Add(56);
+        row0.Add(58);
+        row0.Add(60);
+        row0.Add(62);
+
+        ArrayList row1 = new ArrayList();
+        row1.Add(49);
+        row1.Add(51);
+        row1.Add(53);
+        row1.Add(55);
+
+        ArrayList row2 = new ArrayList();
+        row2.Add(40);
+        row2.Add(42);
+        row2.Add(44);
+        row2.Add(46);
+
+        ArrayList row3 = new ArrayList();
+        row3.Add(33);
+        row3.Add(35);
+        row3.Add(37);
+        row3.Add(39);
+
+        ArrayList row4 = new ArrayList();
+        row4.Add(24);
+        row4.Add(26);
+        row4.Add(28);
+        row4.Add(30);
+
+        ArrayList row5 = new ArrayList();
+        row5.Add(17);
+        row5.Add(19);
+        row5.Add(21);
+        row5.Add(23);
+
+        ArrayList row6 = new ArrayList();
+        row6.Add(8);
+        row6.Add(10);
+        row6.Add(12);
+        row6.Add(14);
+
+        ArrayList row7 = new ArrayList();
+        row7.Add(1);
+        row7.Add(3);
+        row7.Add(5);
+        row7.Add(7);
+
+
+        bool isTrapped = true;
+        int counter = 0;
+        TreeNode<int> returnValue = new TreeNode<int>(int.MinValue);
+
+
+        
+        
+        // print("Debug2: " + sheepList[1]);
+        // print("Debug3: " + sheepList[2]);
+        // print("Debug4: " + sheepList[3]);
+     
+        //print("@@" + foxPosClone);
+        if (depth == 1)
+        {
+            // print("sheepListCLone [0]" + sheepListClone[0]);
+            // print("sheepListCLone [1]" + sheepListClone[1]);
+            // print("sheepListCLone [2]" + sheepListClone[2]);
+            // print("sheepListCLone [3]" + sheepListClone[3]);
+            root.maximizingNode = false;
+            //print("!!!!!!!!!!!!!!!!!!! DEPTH == 1 !!!!!!!!!!!!!!!!!!" + foxPosClone);
+           // print("FOXPOSCLONE"+foxPosClone);
+            if( foxPos == 1 ||
+                foxPos == 3 ||
+                foxPos == 5 ||
+                foxPos == 7)
+            {
+                ResetGridSpaces();
+            }
+
+            
+
+            //If sheep is holding a straight line
+            if(row7.Contains(sheepListClone[0]) && row7.Contains(sheepListClone[1]) && row7.Contains(sheepListClone[2])&& row7.Contains(sheepListClone[3]) 
+                || row6.Contains(sheepListClone[0]) && row6.Contains(sheepListClone[1]) && row6.Contains(sheepListClone[2])&& row6.Contains(sheepListClone[3])
+                || row5.Contains(sheepListClone[0]) && row5.Contains(sheepListClone[1]) && row5.Contains(sheepListClone[2])&& row5.Contains(sheepListClone[3])
+                || row4.Contains(sheepListClone[0]) && row4.Contains(sheepListClone[1]) && row4.Contains(sheepListClone[2])&& row4.Contains(sheepListClone[3])
+                || row3.Contains(sheepListClone[0]) && row3.Contains(sheepListClone[1]) && row3.Contains(sheepListClone[2])&& row3.Contains(sheepListClone[3])
+                || row2.Contains(sheepListClone[0]) && row2.Contains(sheepListClone[1]) && row2.Contains(sheepListClone[2])&& row2.Contains(sheepListClone[3])
+                || row1.Contains(sheepListClone[0]) && row1.Contains(sheepListClone[1]) && row1.Contains(sheepListClone[2])&& row1.Contains(sheepListClone[3])
+                || row0.Contains(sheepListClone[0]) && row0.Contains(sheepListClone[1]) && row0.Contains(sheepListClone[2])&& row0.Contains(sheepListClone[3]))
+            {
+                // print("----> straightLine <----");
+                for (int sheepNr = 0; sheepNr < sheepListClone.Count; sheepNr++)
+                {
+                    //Als schaap in een hoek zit; geef hem de hoogste score;
+                    if(gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep().Count == 1 && sheepListClone.Contains(gridSpaces[gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[0]].GetGridSpaceNumber()) == false){
+                        // print("corner! -----------------");
+                        
+                            if(root._gridSpaceValue != gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[0] ){
+
+                                if(nonSheepAlowedGridspace(foxPosClone).Count == 1 && nonSheepAlowedGridspace(foxPosClone)[0] == gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[0]){
+                                    root.AddChild(int.MinValue);
+                                    root[root.Count-1]._gridSpaceValue = gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[0];
+                                    root[root.Count-1].maximizingNode = true;
+                                    root[root.Count-1].sheepNumbr = sheepNr;
+
+
+                                    // print("--Debug--");
+                                }
+                                else{
+                                    root.AddChild(-10);
+                                    root[root.Count-1]._gridSpaceValue = gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[0];
+                                    root[root.Count-1].maximizingNode = true;
+                                    root[root.Count-1].sheepNumbr = sheepNr;
+
+                                    // print("--Debug--");
+
+                                    
+                                }
+                                
+                               
+                            }
+                        
+                    }else{
+
+                        
+                            for(int alowedgSpacesSheep = 0; alowedgSpacesSheep < gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep().Count; alowedgSpacesSheep++ ){
+                                if(root._gridSpaceValue != gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[alowedgSpacesSheep] ){
+
+                                    if(nonSheepAlowedGridspace(foxPosClone).Count == 1 && nonSheepAlowedGridspace(foxPosClone)[0] == gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[alowedgSpacesSheep]){
+                                        root.AddChild(int.MinValue);
+                                        root[root.Count-1]._gridSpaceValue = gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[alowedgSpacesSheep];
+                                        root[root.Count-1].maximizingNode = true;
+                                        root[root.Count-1].sheepNumbr = sheepNr;
+
+                                        // print("--Debug--");
+                                    }
+                                    else{
+                                        root.AddChild(-1);
+                                        root[root.Count-1]._gridSpaceValue = gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[alowedgSpacesSheep];
+                                        root[root.Count-1].maximizingNode = true;
+                                        root[root.Count-1].sheepNumbr = sheepNr;
+
+                                        // print("--Debug--");
+                                    }
+                                    
+                                }
+                                
+                                //print(gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[alowedgSpacesSheep]);
+                            }
+                        
+                    }
+
+                }
+            }else{
+                for (int sheepNr = 0; sheepNr < sheepListClone.Count; sheepNr++){       
+                    if(gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep().Count == 2){
+                        
+                        
+                            int totalSheepInAlowedgSPace = 0;
+                            for(int alowedgSpacesSheep = 0; alowedgSpacesSheep < gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep().Count; alowedgSpacesSheep++ ){
+                                //Juist als er een is die niet empty is dan is dat de stap die schaap het meest punten hoort op te leveren;
+                                if( sheepListClone.Contains(gridSpaces[gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[alowedgSpacesSheep]].GetGridSpaceNumber()) == true){
+                                    totalSheepInAlowedgSPace +=1;
+                                    
+                                }
+                                if(sheepNr == 1){
+                                    print("::: "+ sheepList[0]);
+                                    print("::: " + sheepList[1]);
+                                    print("::: " + sheepList[2]);
+                                    print("::: " + sheepList[3]);
+
+                                    print(sheepListClone.Contains(gridSpaces[gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[alowedgSpacesSheep]].GetGridSpaceNumber()) == true);
+                                }
+                                
+                                if(totalSheepInAlowedgSPace == 1 && alowedgSpacesSheep == 1){
+                                    // print("!!!!!!!!!!"+ root[root.Count-1]._gridSpaceValue);
+                                    if(root._gridSpaceValue != gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[alowedgSpacesSheep-1] ){
+                                        if(sheepListClone.Contains(gridSpaces[gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[alowedgSpacesSheep-1]].GetGridSpaceNumber()) == false){
+                                            if(nonSheepAlowedGridspace(foxPosClone).Count == 1 && nonSheepAlowedGridspace(foxPosClone)[0] == gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[alowedgSpacesSheep-1]){
+                                                root.AddChild(int.MinValue);
+                                                root[root.Count-1]._gridSpaceValue = gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[alowedgSpacesSheep-1];
+                                                root[root.Count-1].maximizingNode = true;
+                                                root[root.Count-1].sheepNumbr = sheepNr;
+
+                                                // print("--Debug--");
+                                            }
+                                            else{
+                                                // print("!!!!!!!!!!"+ root[root.Count-1]._gridSpaceValue); // ???
+                                                root.AddChild(-10);
+                                                root[root.Count-1]._gridSpaceValue = gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[alowedgSpacesSheep-1];
+                                                root[root.Count-1].maximizingNode = true;
+                                                root[root.Count-1].sheepNumbr = sheepNr;
+
+                                                // print("--Debug--");
+                                            }
+
+                                            
+                                        }
+                                    }
+                                }
+                                if(totalSheepInAlowedgSPace == 1 && alowedgSpacesSheep == 0){
+                                    if(root._gridSpaceValue != gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[alowedgSpacesSheep+1] ){
+                                        if(sheepListClone.Contains(gridSpaces[gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[alowedgSpacesSheep+1]].GetGridSpaceNumber()) == false){
+                                            if(nonSheepAlowedGridspace(foxPosClone).Count == 1 && nonSheepAlowedGridspace(foxPosClone)[0] == gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[alowedgSpacesSheep+1]){
+                                                root.AddChild(int.MinValue);
+                                                root[root.Count-1]._gridSpaceValue = gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[alowedgSpacesSheep+1];
+                                                root[root.Count-1].maximizingNode = true;
+                                                root[root.Count-1].sheepNumbr = sheepNr;
+
+                                                // print("--Debug--");
+                                            }
+                                            else{
+                                                root.AddChild(-10);
+                                                root[root.Count-1]._gridSpaceValue = gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[alowedgSpacesSheep+1];
+                                                root[root.Count-1].maximizingNode = true;
+                                                root[root.Count-1].sheepNumbr = sheepNr;
+
+                                                // print("--Debug--");
+                                            }
+                                            
+                                        }   
+                                    }
+                                }
+                            }
+                            if(sheepListClone.Contains(gridSpaces[gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[0]].GetGridSpaceNumber()) == false && sheepListClone.Contains(gridSpaces[gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[1]].GetGridSpaceNumber()) == false){
+                                if(root._gridSpaceValue != gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[0] ){
+                                    if(nonSheepAlowedGridspace(foxPosClone).Count == 1 && nonSheepAlowedGridspace(foxPosClone)[0] == gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[0]){
+                                        root.AddChild(int.MinValue);
+                                        root[root.Count-1]._gridSpaceValue = gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[0];
+                                        root[root.Count-1].maximizingNode = true;
+                                        root[root.Count-1].sheepNumbr = sheepNr;
+
+                                        // print("--Debug--");
+                                    }
+
+                                    else{
+
+                                        root.AddChild(-1);
+                                        root[root.Count-1]._gridSpaceValue = gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[0];
+                                        root[root.Count-1].maximizingNode = true;
+                                        root[root.Count-1].sheepNumbr = sheepNr;
+                                        
+
+
+                                        // print("--Debug--");
+                                    }
+                                    
+                                }
+                                if(root._gridSpaceValue != gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[1] ){
+                                    if(nonSheepAlowedGridspace(foxPosClone).Count == 1 && nonSheepAlowedGridspace(foxPosClone)[0] == gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[1]){
+                                        root.AddChild(int.MinValue);
+                                        root[root.Count-1]._gridSpaceValue = gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[1];
+                                        root[root.Count-1].maximizingNode = true;
+                                        root[root.Count-1].sheepNumbr = sheepNr;
+
+                                        // print("--Debug--");
+                                    }
+                                    else{
+                                        root.AddChild(-1);
+                                        root[root.Count-1]._gridSpaceValue = gridSpaces[sheepListClone[sheepNr]].GetMmAlowedGridSpacesSheep()[1];
+                                        root[root.Count-1].maximizingNode = true;
+                                        root[root.Count-1].sheepNumbr = sheepNr;
+
+                                        // print("--Debug--");
+                                    }
+                                    
+                                }
+                            }  
+                          
+                    }
+                }
+            }
+            
+            
+
+
+            for (int rootChildren = 0; rootChildren < root.Count; rootChildren++){
+                for (int i = 0; i < gridSpaces[foxPosClone].GetAlowedGridSpaces().Count; i++)
+                    {
+                        
+                        
+                        
+
+                        if (row0.Contains(gridSpaces[foxPosClone].GetAlowedGridSpaces()[i]))
+                        {
+
+                            if( row0.Contains(sheepList.Min()) && gridSpaces[gridSpaces[foxPosClone].GetAlowedGridSpaces()[i]].GetGridSpaceStatus() == GridSpaceStatus.EMPTY){
+                                root[rootChildren].AddChild(1001);
+                                // root.setData(1);
+                                root[rootChildren]._bestMove = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                            
+                                root[rootChildren][i]._gridSpaceValue = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+
+                                root[rootChildren][i].maximizingNode = false; 
+                            }else{
+                                root[rootChildren].AddChild(1);
+                                // root.setData(1);
+                                root[rootChildren]._bestMove = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                            
+                                root[rootChildren][i]._gridSpaceValue = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+
+                                root[rootChildren][i].maximizingNode = false;
+                            }
+
+                            
+                        }
+                        if (row1.Contains(gridSpaces[foxPosClone].GetAlowedGridSpaces()[i]))
+                        {
+
+                            if( row1.Contains(sheepList.Min()) && gridSpaces[gridSpaces[foxPosClone].GetAlowedGridSpaces()[i]].GetGridSpaceStatus() == GridSpaceStatus.EMPTY){
+                                root.AddChild(1002);
+                                // root.setData(2);
+                                root[rootChildren]._bestMove = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                                root[rootChildren][i]._gridSpaceValue = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                                root[rootChildren][i].maximizingNode = false;
+                            }
+                            else{
+                                root[rootChildren].AddChild(2);
+                                // root.setData(2);
+                                root[rootChildren]._bestMove = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                                root[rootChildren][i]._gridSpaceValue = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                                root[rootChildren][i].maximizingNode = false;
+                            }
+                            
+                        }
+                        if (row2.Contains(gridSpaces[foxPosClone].GetAlowedGridSpaces()[i]))
+                        {
+                            if( row2.Contains(sheepList.Min()) && gridSpaces[gridSpaces[foxPosClone].GetAlowedGridSpaces()[i]].GetGridSpaceStatus() == GridSpaceStatus.EMPTY){
+                                root[rootChildren].AddChild(1003);
+                                // root.setData(2);
+                                root[rootChildren]._bestMove = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                                root[rootChildren][i]._gridSpaceValue = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                                root[rootChildren][i].maximizingNode = false;
+                            }
+                            else{
+                                root[rootChildren].AddChild(3);
+                                // root.setData(2);
+                                root[rootChildren]._bestMove = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                                root[rootChildren][i]._gridSpaceValue = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                                root[rootChildren][i].maximizingNode = false;
+                            }
+                        }
+                        if (row3.Contains(gridSpaces[foxPosClone].GetAlowedGridSpaces()[i]))
+                        {
+                            if( row3.Contains(sheepList.Min()) && gridSpaces[gridSpaces[foxPosClone].GetAlowedGridSpaces()[i]].GetGridSpaceStatus() == GridSpaceStatus.EMPTY){
+                                root[rootChildren].AddChild(1004);
+                                // root.setData(2);
+                                root[rootChildren]._bestMove = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                                root[rootChildren][i]._gridSpaceValue = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                                root[rootChildren][i].maximizingNode = false;
+                            }
+                            else{
+                                root[rootChildren].AddChild(4);
+                                // root.setData(2);
+                                root[rootChildren]._bestMove = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                                root[rootChildren][i]._gridSpaceValue = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                                root[rootChildren][i].maximizingNode = false;
+                            }
+                        }
+                        if (row4.Contains(gridSpaces[foxPosClone].GetAlowedGridSpaces()[i]))
+                        {
+                            if( row4.Contains(sheepList.Min()) && gridSpaces[gridSpaces[foxPosClone].GetAlowedGridSpaces()[i]].GetGridSpaceStatus() == GridSpaceStatus.EMPTY){
+                                root[rootChildren].AddChild(1005);
+                                // root.setData(2);
+                                root[rootChildren]._bestMove = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                                root[rootChildren][i]._gridSpaceValue = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                                root[rootChildren][i].maximizingNode = false;
+                            }
+                            else{
+                                root[rootChildren].AddChild(5);
+                                // root.setData(2);
+                                root[rootChildren]._bestMove = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                                root[rootChildren][i]._gridSpaceValue = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                                root[rootChildren][i].maximizingNode = false;
+                            }
+
+                        }
+                        if (row5.Contains(gridSpaces[foxPosClone].GetAlowedGridSpaces()[i]))
+                        {
+                           if( row5.Contains(sheepList.Min()) && gridSpaces[gridSpaces[foxPosClone].GetAlowedGridSpaces()[i]].GetGridSpaceStatus() == GridSpaceStatus.EMPTY){
+                                root[rootChildren].AddChild(1006);
+                                // root.setData(2);
+                                root[rootChildren]._bestMove = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                                root[rootChildren][i]._gridSpaceValue = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                                root[rootChildren][i].maximizingNode = false;
+                            }
+                            else{
+                                root[rootChildren].AddChild(6);
+                                // root.setData(2);
+                                root[rootChildren]._bestMove = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                                root[rootChildren][i]._gridSpaceValue = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                                root[rootChildren][i].maximizingNode = false;
+                            }
+
+
+                        }
+                        if (row6.Contains(gridSpaces[foxPosClone].GetAlowedGridSpaces()[i]))
+                        {
+                            if( row6.Contains(sheepList.Min()) && gridSpaces[gridSpaces[foxPosClone].GetAlowedGridSpaces()[i]].GetGridSpaceStatus() == GridSpaceStatus.EMPTY){
+                                root[rootChildren].AddChild(1007);
+                                // root.setData(2);
+                                root[rootChildren]._bestMove = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                                root[rootChildren][i]._gridSpaceValue = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                                root[rootChildren][i].maximizingNode = false;
+                            }
+                            else{
+                                root[rootChildren].AddChild(7);
+                                // root.setData(2);
+                                root[rootChildren]._bestMove = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                                root[rootChildren][i]._gridSpaceValue = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                                root[rootChildren][i].maximizingNode = false;
+                            }
+
+                        }
+
+
+                        if (row7.Contains(gridSpaces[foxPosClone].GetAlowedGridSpaces()[i])  )
+                        {
+                            
+                            //print("DEBUg" + gridSpaces[foxPosClone].GetAlowedGridSpaces().Count);
+                            root[rootChildren].AddChild(int.MaxValue);
+                            //root.setData(int.MaxValue);
+                            root[rootChildren]._bestMove = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                            root[rootChildren][i]._gridSpaceValue = gridSpaces[foxPosClone].GetAlowedGridSpaces()[i];
+                            root[rootChildren][i].maximizingNode = false;
+
+                        }
+                       
+                        // print("***************************" + nonSheepAlowedGridspace(root[0]._gridSpaceValue).Count);
+
+                        //print(largestHeuristicValue);
+                        //print("!!!!!!!!!!!!!!!!!!!!!!!!!!!--------------------!!!!!!!!!!!!!!!!!!!!!!!!!" + root.Data);
+                    }
+                }
+
+            int lowestHeuristicValue = int.MaxValue;
+            int posBuffer = 0;
+            int negBuffer = 0;
+            // append correct value to leafNode.Parrent
+            for (int y = 0; y < root.Count; y++)
+            {
+                if(root[y].Data <= 0 && root[y].Data != posBuffer){
+                    posBuffer = root[y].Data;
+                }
+                print("---------------------------------------" + posBuffer );
+
+                for(int z = 0; z < root[y].Count; z++){
+                    //print( root[y].Data < root[y][1].Data );
+                    if (root[y].Data < root[y][z].Data)
+                    {
+
+                        if(root[y][z].Data < 0 && root[y][z].Data != negBuffer){
+                            negBuffer = root[y][z].Data;
+                        }
+
+                        lowestHeuristicValue = root[y][z].Data;
+                        // print("---------------------------------------" + posBuffer );
+
+                        
+                        root[y].setData(  root[y][z].Data + posBuffer);
+                        
+
+                    }
+
+                
+                }
+            }
+
+
+            
+            
+            int largestHeuristicValue = int.MinValue;
+            int blockedSpaces = 0;
+            for (int y = 0; y < root.Count; y++)
+            {
+
+                // asign root best move... Do this in MoveWolfAI
+                // if (root.Data < root[y].Data && gridSpaces[root[y]._gridSpaceValue].GetGridSpaceStatus() != GridSpaceStatus.SHEEP)
+                // {
+                //     largestHeuristicValue = root[y].Data;
+                //     root._bestMove = root[y]._gridSpaceValue;
+                //     root.setData(root[y].Data);
+
+                // }
+                if(gridSpaces[root[y]._gridSpaceValue].GetGridSpaceStatus() == GridSpaceStatus.SHEEP){
+                    blockedSpaces+=1;    
+                }
+                
+                if(blockedSpaces == root.Count){
+                    //print("PRERESET!!!!!!!!!!!" + root._bestMove);
+                    //gridSpaces [root._bestMove].SetGridSpaceStatus(GridSpaceStatus.EMPTY);
+                    root.gameOver = true;
+                    ResetGridSpaces();
+                }
+
+            }
+
+            return root;
+        }
+        else
+        {
+
+            TreeNode<int> baseCaseNode = createTreeSheep(root, 1, true);
+            int sheep1Posbuff = sheepListClone[0];
+            int sheep2Posbuff = sheepListClone[1];
+            int sheep3Posbuff = sheepListClone[2];
+            int sheep4Posbuff = sheepListClone[3];
+
+            int previousValueBuff =0;
+            int maximizingBuff = -1000;
+            
+            for (int i = 0; i < root.Count; i++)
+            {
+                // print("foxPOSCLONEAlgorithm " + root._children[i]._gridSpaceValue);
+                if (root._children[i]._gridSpaceValue > -1)
+                {
+                    foxPosClone = root._children[i]._gridSpaceValue;
+                }
+                //sheepNr count from 0 to 3 (sheep1 to sheep4);
+                for (int y = 0; y < root._children[i].Count; y++)
+                {
+                    if(root._children[i]._children[y]._gridSpaceValue > -1){
+                        if(root._children[i]._children[y].sheepNumbr == 0){
+                            sheepListClone[0] = root._children[i]._children[y]._gridSpaceValue;
+                            sheepListClone[1] = sheep2Posbuff;
+                            sheepListClone[2] = sheep3Posbuff;
+                            sheepListClone[3] = sheep4Posbuff;
+                        }
+                        if(root._children[i]._children[y].sheepNumbr == 1){
+                            sheepListClone[1] = root._children[i]._children[y]._gridSpaceValue;
+
+
+                            sheepListClone[0] = sheep1Posbuff;
+                            sheepListClone[2] = sheep3Posbuff;
+                            sheepListClone[3] = sheep4Posbuff;
+                        }
+                        if(root._children[i]._children[y].sheepNumbr == 2){
+                            sheepListClone[2] = root._children[i]._children[y]._gridSpaceValue;
+
+                            sheepListClone[0] = sheep1Posbuff;
+                            sheepListClone[1] = sheep2Posbuff;
+                            sheepListClone[3] = sheep4Posbuff;
+                        }
+                        if(root._children[i]._children[y].sheepNumbr == 3){
+                            sheepListClone[3] = root._children[i]._children[y]._gridSpaceValue;
+
+                            sheepListClone[0] = sheep1Posbuff;
+                            sheepListClone[1] = sheep2Posbuff;
+                            sheepListClone[2] = sheep3Posbuff;
+                        }
+                    }
+                    returnValue = createTreeSheep(root._children[i]._children[y], depth - 1, false);
+                }
+            }
+
+            //--start
+            
+            for(int x = 0; x < returnValue.Parent.Parent.Count; x++){
+                int posssBuffer = + 1000;
+                int oldValue = -1000;
+                for(int i = 0; i < returnValue.Parent.Parent[x].Count; i++){
+
+                    int neggBuffer = -1000;
+                    
+                    for(int y = 0; y < returnValue.Parent.Parent[x][i].Count; y++){
+
+                        
+                        if(returnValue.Parent.Parent[x][i][y].Data > neggBuffer && returnValue.Parent.Parent[x][i][y].Data != neggBuffer){
+                            //print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" + returnValue.Parent.Parent[x][i][y].Data );
+                            neggBuffer = returnValue.Parent.Parent[x][i][y].Data;
+                        }
+                    }
+
+                    if(returnValue.Parent.Parent[x][i].Data < posssBuffer && returnValue.Parent.Parent[x][i].Data != posssBuffer){
+                        oldValue = returnValue.Parent.Parent[x][i].Data;
+                    }
+
+
+                    returnValue.Parent.Parent[x][i].setData(neggBuffer + returnValue.Parent.Parent[x][i].Data);
+
+                    if(returnValue.Parent.Parent[x][i].Data < posssBuffer && returnValue.Parent.Parent[x][i].Data != posssBuffer){
+                        posssBuffer = returnValue.Parent.Parent[x][i].Data;
+                    }
+
+                }
+                
+                returnValue.Parent.Parent[x].setData((((oldValue * -1) + returnValue.Parent.Parent[x].Data) + posssBuffer));
+            }
+
+       
+            return returnValue;
+        }
+    }
+
 
  
 
@@ -602,47 +1616,148 @@ public class GameController : MonoBehaviour {
         
 
         foxPosClone = foxPos;
+        sheepListClone[0] = sheepList[0];
+        sheepListClone[1] = sheepList[1];
+        sheepListClone[2] = sheepList[2];
+        sheepListClone[3] = sheepList[3];
 
         TreeNode<int> roots = new TreeNode<int>(int.MinValue);
         
-        TreeNode<int> minMaxNode = createTree(roots, 1, true);
+        TreeNode<int> minMaxNode = createTreeWolf(roots, 2, true);
 
-        print("MinMax::::root.Data " + minMaxNode.Data);
+        // print("#####" + minMaxNode.Parent.Parent[1][6]._gridSpaceValue);
+        // print("#####" + minMaxNode.Parent.Parent[1][6].Data);
+        // print("#" + minMaxNode.Parent.Parent[0][6][2]._gridSpaceValue);
+        // print("#" + minMaxNode.Parent.Parent[0][6][2].Data);
+        //print(minMaxNode.Data < minMaxNode[2].Data && minMaxNode[0].maximizingNode == false);
+
+
+
+        while(minMaxNode.IsRoot == false){
+            minMaxNode = minMaxNode.Parent;
+        }
+
+        // print("MinMax::::root.Data " + minMaxNode.Data);
+        // print("MinMax::::root._bestMove " + minMaxNode._bestMove);
+        // print("MinMax::::root._bestMove " + minMaxNode.maximizingNode);
+        
+        // print("MinMax::::[0]_gridSpaceValue " + minMaxNode[0]._gridSpaceValue);
+        // print("MinMax::::[0]Data " + minMaxNode[0].Data);
+
+        // print("MinMax::::[1]_gridSpaceValue " + minMaxNode[1]._gridSpaceValue);
+        // print("MinMax::::[1]Data " + minMaxNode[1].Data);
+
+
+        // print("---->[0].Count: " + minMaxNode[0].Count  +  "<----");
+        // print("---->[1].Count: " + minMaxNode[1].Count  +  "<----");
+        
+        // for(int i = 0; i <minMaxNode.Count; i++){
+        //     print("MinMax::::["+ i + "]_gridSpaceValue " + minMaxNode[i]._gridSpaceValue);
+        //     print("MinMax::::["+ i + "]Data " + minMaxNode[i].Data);
+        // }
+
+        // if(minMaxNode.Count > 2){
+        //     for(int i = 0; i <minMaxNode[2].Count; i++){
+        //             print("MinMax::::[0]["+ i + "]_gridSpaceValue " + minMaxNode[2][i]._gridSpaceValue);
+        //             print("MinMax::::[0]["+ i + "]Data " + minMaxNode[2][i].Data);
+        //             print("MinMax::::[0]["+ i + "]sheepNr " + minMaxNode[2][i].sheepNumbr);
+        //     }
+
+        // }
+
+
+
+
+        int largestHeuristicValue = int.MinValue;
+        int blockedSpaces = 0;
+
+        for (int y = 0; y < minMaxNode.Count; y++)
+        {
+            if (minMaxNode.Data < minMaxNode[y].Data && gridSpaces[minMaxNode[y]._gridSpaceValue].GetGridSpaceStatus() != GridSpaceStatus.SHEEP)
+            {
+                // largestHeuristicValue = root[y].Data;
+                minMaxNode._bestMove = minMaxNode[y]._gridSpaceValue;
+                minMaxNode.setData(minMaxNode[y].Data);
+
+            }
+        }
+        print("------ debug ------");
+
+        print("MinMax::::root._gridSpaceValue " + minMaxNode._gridSpaceValue);
         print("MinMax::::root._bestMove " + minMaxNode._bestMove);
-        
-        print("MinMax::::[0]_gridSpaceValue " + minMaxNode[0]._gridSpaceValue);
-        print("MinMax::::[0]Data " + minMaxNode[0].Data);
+        print("MinMax::::root.Data " + minMaxNode.Data);
 
-        print("MinMax::::[1]_gridSpaceValue " + minMaxNode[1]._gridSpaceValue);
-        print("MinMax::::[1]Data " + minMaxNode[1].Data);
+        print("---end of root---");
+        if(minMaxNode.Count > 2){
+            print("MinMax::::root._gridSpaceValue[0]._gridSpaceValue " + minMaxNode[0]._gridSpaceValue);
+            print("MinMax::::root._gridSpaceValue[0]._gridSpaceValue " + minMaxNode[0].Data);
+
+            print("MinMax::::root._gridSpaceValue[1]._gridSpaceValue " + minMaxNode[1]._gridSpaceValue);
+            print("MinMax::::root._gridSpaceValue[1]._gridSpaceValue " + minMaxNode[1].Data);
+
+            print("MinMax::::root._gridSpaceValue[2]._gridSpaceValue " + minMaxNode[2]._gridSpaceValue);
+            print("MinMax::::root._gridSpaceValue[2]._gridSpaceValue " + minMaxNode[2].Data);
+
+            print("MinMax::::root._gridSpaceValue[3]._gridSpaceValue " + minMaxNode[3]._gridSpaceValue);
+            print("MinMax::::root._gridSpaceValue[3]._gridSpaceValue " + minMaxNode[3].Data);
 
 
-        print("---->[0].Count: " + minMaxNode[0].Count  +  "<----");
-        print("---->[1].Count: " + minMaxNode[1].Count  +  "<----");
-        
+            print("MinMax::::root._gridSpaceValue[0][0]._gridSpaceValue " + minMaxNode[0][0]._gridSpaceValue);
+            print("MinMax::::root._gridSpaceValue[0][0]._gridSpaceValue " + minMaxNode[0][0].Data);
 
-        if(minMaxNode[0].Count == 7){
-            print("MinMax::::[0][0]_gridSpaceValue " + minMaxNode[0][0]._gridSpaceValue);
-            print("MinMax::::[0][0]Data " + minMaxNode[0][0].Data);
+           
+            print("MinMax::::root._gridSpaceValue[0][1]._gridSpaceValue " + minMaxNode[0][1]._gridSpaceValue);
+            print("MinMax::::root._gridSpaceValue[0][1]._gridSpaceValue " + minMaxNode[0][1].Data);
 
-            print("MinMax::::[0][1]_gridSpaceValue " + minMaxNode[0][1]._gridSpaceValue);
-            print("MinMax::::[0][1]Data " + minMaxNode[0][1].Data);
 
-            print("MinMax::::[0][2]_gridSpaceValue " + minMaxNode[0][2]._gridSpaceValue);
-            print("MinMax::::[0][2]Data " + minMaxNode[0][2].Data);
-            print("MinMax::::[0][3]_gridSpaceValue " + minMaxNode[0][3]._gridSpaceValue);
-            print("MinMax::::[0][3]Data " + minMaxNode[0][3].Data);
-            print("MinMax::::[0][4]_gridSpaceValue " + minMaxNode[0][4]._gridSpaceValue);
-            print("MinMax::::[0][4]Data " + minMaxNode[0][4].Data);
-            print("MinMax::::[0][4]_gridSpaceValue " + minMaxNode[0][5]._gridSpaceValue);
-            print("MinMax::::[0][4]Data " + minMaxNode[0][5].Data);
-
-             print("MinMax::::[0][4]_gridSpaceValue " + minMaxNode[0][6]._gridSpaceValue);
-            print("MinMax::::[0][4]Data " + minMaxNode[0][6].Data);
         }
         
+
+        // print("MinMax::::root._gridSpaceValue[0]._gridSpaceValue " + minMaxNode[0]._gridSpaceValue);
+        // print("MinMax::::root._gridSpaceValue[0]._gridSpaceValue " + minMaxNode[0].Data);
+        // print("MinMax::::root._gridSpaceValue[0][0]._gridSpaceValue " + minMaxNode[0][0]._gridSpaceValue);
+        // print("MinMax::::root._gridSpaceValue[0][0]._gridSpaceValue " + minMaxNode[0][0].Data);
+
+        // print("---");
+        // print("MinMax::::root._gridSpaceValue[0][6][2]._gridSpaceValue " + minMaxNode[0][6][2]._gridSpaceValue);
+        // print("MinMax::::root._gridSpaceValue[0][6][2].Data " + minMaxNode[0][6][2].Data);
+
+        // print("MinMax::::root._gridSpaceValue[0][6][2][4]._gridSpaceValue " + minMaxNode[0][6][2][1]._gridSpaceValue);
+        // print("MinMax::::root._gridSpaceValue[0][6][2][4].Data " + minMaxNode[0][6][2][1].Data);
+
+        // print("MinMax::::root._gridSpaceValue[0][6][2][4][3]._gridSpaceValue " + minMaxNode[0][6][2][4][3]._gridSpaceValue);
+        // print("MinMax::::root._gridSpaceValue[0][6][2][4][3].Data " + minMaxNode[0][6][2][4][3].Data);
+        // print("MinMax::::root._gridSpaceValue[0][6].TestSheepNr " + minMaxNode[0][6].sheepNumbr);
+        // print("MinMax::::root._gridSpaceValue[0][5][0].TestSheepNr " + minMaxNode[0][6][2][4].debugBuff);
+
+        // print("MinMax::::root._gridSpaceValue[0][1][0].Count " + minMaxNode[0][1][0].Count);
+
+        //print(minMaxNode.Parent.Parent.IsRoot);
+
+        // if(minMaxNode.Count > 2){
+        //     if(minMaxNode[2].Count > 2){
+        //         for(int i = 0; i <minMaxNode[2][6].Count; i++){
+        //                 print("MinMax::::[2][6]["+ i + "]_gridSpaceValue " + minMaxNode[2][6][i]._gridSpaceValue);
+        //                 print("MinMax::::[2][6]["+ i + "]Data " + minMaxNode[2][6][i].Data);
+        //                 print("MinMax::::[2][6]["+ i + "]sheepNr " + minMaxNode[2][6][i].sheepNumbr);
+        //         }
+        //     }
+        // }
+
+        // if(minMaxNode.Count > 2){
+        //     if(minMaxNode[2].Count > 2){
+        //         if(minMaxNode[2][6].Count > 2){
+        //             for(int i = 0; i <minMaxNode[2][6].Count; i++){
+        //                 print("MinMax::::[2][6][3]["+ i + "]_gridSpaceValue " + minMaxNode[2][6][3][i]._gridSpaceValue);
+        //                 print("MinMax::::[2][6][3]["+ i + "]Data " + minMaxNode[2][6][3][i].Data);
+        //                 print("MinMax::::[2][6][3]["+ i + "]sheepNr " + minMaxNode[2][6][3][i].sheepNumbr);
+        //             }
+        //         }
+                
+        //     }
+        // }
         
-        
+        // print(minMaxNode[2][6].Count);
 
 
         // print("-----");
@@ -673,41 +1788,96 @@ public class GameController : MonoBehaviour {
             ResetGridSpaces();
         }
         
-        if (gridSpaces[minMaxNode._bestMove].GetAlowedGridSpaces().Count == 2 )
-        {
-           
-
-            //gridSpaces[gridSpaces[foxPos].GetAlowedGridSpaces()[0]].SetGridSpaceStatus(GridSpaceStatus.WOLF);
-            //print("!!!!!!!!TREEDATA");
-            print(gridSpaces[gridSpaces[foxPos].GetAlowedGridSpaces()[0]].GetGridSpaceStatus());
-            // print("RV");
-            print(foxPos);
-        }
-        if (gridSpaces[foxPos].GetAlowedGridSpaces().Count == 4)
-        {
-            /*TreeNode<int> root = new TreeNode<int>(foxPos);
-            TreeNode<int> L1N0 = root.AddChild(gridSpaces[foxPos].GetAlowedGridSpaces()[0]);
-            TreeNode<int> L1N1 = root.AddChild(gridSpaces[foxPos].GetAlowedGridSpaces()[1]);
-
-            TreeNode<int> L2N0L = L1N0.AddChild(gridSpaces[L1N0.Data].GetAlowedGridSpaces()[0]);
-            TreeNode<int> L2N1L = L1N0.AddChild(gridSpaces[L1N0.Data].GetAlowedGridSpaces()[1]);
-
-
-            TreeNode<int> L2N0 = L1N1.AddChild(gridSpaces[L1N1.Data].GetAlowedGridSpaces()[0]);
-            TreeNode<int> L2N1 = L1N1.AddChild(gridSpaces[L1N1.Data].GetAlowedGridSpaces()[1]);*/
-
-            //gridSpaces[gridSpaces[foxPos].GetAlowedGridSpaces()[3]].SetGridSpaceStatus(GridSpaceStatus.WOLF);
-            // print("<!!!!!!!!!!!!>" + gridSpaces[gridSpaces[foxPos].GetAlowedGridSpaces()[3]]);
-            // print("LV");
-            print(foxPos);
-             
-        }
+        
     }
     public void AIMoveSheep(){
+        foxPosClone = foxPos;
+        
+        TreeNode<int> roots = new TreeNode<int>(int.MaxValue);
+        
+        TreeNode<int> minMaxNode = createTreeSheep(roots, 1, true);
+
+
+        print("root._gridSpaceValue" + minMaxNode._gridSpaceValue);
+        print("root.Data" + minMaxNode.Data);
+        print("root.Count" + minMaxNode.Count);
+
+        // print("minMaxNode[6]._gridSpaceValue" + minMaxNode[0]._gridSpaceValue);
+        // print("minMaxNode[6].Data" + minMaxNode[0].Data);
+        // print("minMaxNode[6].Count" + minMaxNode[0].Count);
+
+        // print("minMaxNode[6]._gridSpaceValue" + minMaxNode[1]._gridSpaceValue);
+        // print("minMaxNode[6].Data" + minMaxNode[1].Data);
+        // print("minMaxNode[6].Count" + minMaxNode[1].Count);
+
+        // print("minMaxNode[6]._gridSpaceValue" + minMaxNode[2]._gridSpaceValue);
+        // print("minMaxNode[6].Data" + minMaxNode[2].Data);
+        // print("minMaxNode[6].Count" + minMaxNode[2].Count);
+
+        // print("minMaxNode[6]._gridSpaceValue" + minMaxNode[3]._gridSpaceValue);
+        // print("minMaxNode[6].Data" + minMaxNode[3].Data);
+        // print("minMaxNode[6].Count" + minMaxNode[3].Count);
+
+        //  print("minMaxNode[6]._gridSpaceValue" + minMaxNode[4]._gridSpaceValue);
+        // print("minMaxNode[6].Data" + minMaxNode[4].Data);
+        // print("minMaxNode[6].Count" + minMaxNode[4].Count);
+
+        //  print("minMaxNode[6]._gridSpaceValue" + minMaxNode[5]._gridSpaceValue);
+        // print("minMaxNode[6].Data" + minMaxNode[5].Data);
+        // print("minMaxNode[6].Count" + minMaxNode[5].Count);
+
+        //  print("minMaxNode[6]._gridSpaceValue" + minMaxNode[6]._gridSpaceValue);
+        // print("minMaxNode[6].Data" + minMaxNode[6].Data);
+        // print("minMaxNode[6].Count" + minMaxNode[6].Count);
+
+        // print("minMaxNode[6][0]._gridSpaceValue" + minMaxNode[6][0]._gridSpaceValue);
+        // print("minMaxNode[6][0].Data" + minMaxNode[6][0].Data);
+        // print("minMaxNode[6][0].Count" + minMaxNode[6][0].Count);
+
+
+
+        
+        int largestHeuristicValue = int.MaxValue;
+        int blockedSpaces = 0;
+
+        for (int y = 0; y < minMaxNode.Count; y++)
+        {
+            if (minMaxNode.Data > minMaxNode[y].Data && gridSpaces[minMaxNode[y]._gridSpaceValue].GetGridSpaceStatus() != GridSpaceStatus.WOLF)
+            {
+                // largestHeuristicValue = root[y].Data;
+                minMaxNode._bestMove = minMaxNode[y]._gridSpaceValue;
+                minMaxNode.sheepNumbr = minMaxNode[y].sheepNumbr;
+                minMaxNode.setData(minMaxNode[y].Data);
+
+            }
+        }
+
+        print("********_bestMove" + minMaxNode._bestMove);
+        print("********sheepNumbr" + minMaxNode.sheepNumbr);
+
+        //print("********" + sheepList[1]);
+
+
+
 
             
-        //gridSpaces[foxPos].SetGridSpaceStatus(GridSpaceStatus.EMPTY);
-        //gridSpaces[minMaxNode._bestMove].SetGridSpaceStatus(GridSpaceStatus.WOLF);
+        gridSpaces[sheepList[minMaxNode.sheepNumbr]].SetGridSpaceStatus(GridSpaceStatus.EMPTY);
+        gridSpaces[minMaxNode._bestMove].SetGridSpaceStatus(GridSpaceStatus.SHEEP);
+        sheepList[minMaxNode.sheepNumbr] = minMaxNode._bestMove;
+
+
+        print("sheep0Pos" + sheepList[0]);
+        print("sheep1Pos" + sheepList[1]);
+        print("sheep2Pos" + sheepList[2]);
+        print("sheep3Pos" + sheepList[3]);
+
+        sheepListClone[0] = sheepList[0];
+        sheepListClone[1] = sheepList[1];
+        sheepListClone[2] = sheepList[2];
+        sheepListClone[3] = sheepList[3];
+
+        
+
       
     }
 
@@ -885,7 +2055,10 @@ public class GameController : MonoBehaviour {
 
 
         Player player = GameObject.Find("/Player").GetComponent<Player>();
-        SheepturnCalculator();
+         if (GridSpaceStatus.SHEEP == player.playerRole)
+        {
+            SheepturnCalculator();
+        }
         for (int i = 0; i < 64; i++)
         {
             // print((gridSpaces[sheep1buffer].GetGridSpaceStatus()));
@@ -894,6 +2067,15 @@ public class GameController : MonoBehaviour {
             gridSpaces[i].SetSheep3OldPos((gridSpaces[sheep3buffer].GetGridSpaceStatus()));
             gridSpaces[i].SetSheep4OldPos((gridSpaces[sheep4buffer].GetGridSpaceStatus()));
             //print(gridSpaces[i].GetAITurn());
+            
+            if (GridSpaceStatus.WOLF == gridSpaces[i].GetGridSpaceStatus())
+                {
+                    foxPos = gridSpaces[i].GetGridSpaceNumber();
+                    //print("****************************************" + (foxPos));
+                }
+
+
+
             //AI
             if (GridSpaceStatus.SHEEP == player.playerRole && (gridSpaces[i].GetAITurn() == true))
             {
@@ -904,11 +2086,27 @@ public class GameController : MonoBehaviour {
                 
                    
                     //adjust new  Position and end AIturn
-                    foxPos = gridSpaces[i].GetGridSpaceNumber();
-                    if (gridSpaces[foxPos].GetAlowedGridSpaces().Count == 4)
+                    // foxPos = gridSpaces[i].GetGridSpaceNumber();
+                    // if (gridSpaces[foxPos].GetAlowedGridSpaces().Count == 4)
+                    // {
+                    //     AIGoToStatus = gridSpaces[gridSpaces[foxPos].GetAlowedGridSpaces()[3]].GetGridSpaceStatus();
+                    // }
+                    for (int y = 0; y < 64; y++)
                     {
-                        AIGoToStatus = gridSpaces[gridSpaces[foxPos].GetAlowedGridSpaces()[3]].GetGridSpaceStatus();
+                        gridSpaces[y].SetAITurn(false);
                     }
+                
+            }
+
+             if (GridSpaceStatus.WOLF == player.playerRole && (gridSpaces[i].GetAITurn() == true))
+            {
+                print("AISheep IS IN TURN NOW!");
+                
+                
+                    AIMoveSheep();
+                
+                   
+                    
                     for (int y = 0; y < 64; y++)
                     {
                         gridSpaces[y].SetAITurn(false);
@@ -917,70 +2115,6 @@ public class GameController : MonoBehaviour {
             }
 
             {
-
-                if (GridSpaceStatus.WOLF == gridSpaces[i].GetGridSpaceStatus())
-                {
-                    foxPos = gridSpaces[i].GetGridSpaceNumber();
-                    //print("****************************************" + (foxPos));
-                }
-                
-                
-
-
-                
-                
-                //foxCanOnlyMoveOnOneTiles
-               /* if (gridSpaces[foxPos].GetAlowedGridSpaces().Count == 1
-                    && gridSpaces[foxPos].GetAlowedGridSpaces().Contains(sheep1Pos) == true
-                    || gridSpaces[foxPos].GetAlowedGridSpaces().Count == 1 
-                    && gridSpaces[foxPos].GetAlowedGridSpaces().Contains(sheep2Pos) == true
-                    || gridSpaces[foxPos].GetAlowedGridSpaces().Count == 1
-                    && gridSpaces[foxPos].GetAlowedGridSpaces().Contains(sheep3Pos) == true
-                    || gridSpaces[foxPos].GetAlowedGridSpaces().Count == 1
-                    && gridSpaces[foxPos].GetAlowedGridSpaces().Contains(sheep4Pos) == true
-                    )
-                {
-                    print("**************************SHEEEEEEP WIN!!!!*************************");
-                    ResetGridSpaces();
-                }
-
-                //foxCanOnlyMoveOnTwoTiles
-                if (gridSpaces[foxPos].GetAlowedGridSpaces().Count == 2  
-                    && gridSpaces[foxPos].GetAlowedGridSpaces().Contains(sheep1Pos) == true 
-                    && gridSpaces[foxPos].GetAlowedGridSpaces().Contains(sheep2Pos) == true
-                    || gridSpaces[foxPos].GetAlowedGridSpaces().Count == 2
-                    && gridSpaces[foxPos].GetAlowedGridSpaces().Contains(sheep3Pos) == true
-                    && gridSpaces[foxPos].GetAlowedGridSpaces().Contains(sheep4Pos) == true
-                    || gridSpaces[foxPos].GetAlowedGridSpaces().Count == 2
-                    && gridSpaces[foxPos].GetAlowedGridSpaces().Contains(sheep1Pos) == true
-                    && gridSpaces[foxPos].GetAlowedGridSpaces().Contains(sheep3Pos) == true
-                    || gridSpaces[foxPos].GetAlowedGridSpaces().Count == 2
-                    && gridSpaces[foxPos].GetAlowedGridSpaces().Contains(sheep2Pos) == true
-                    && gridSpaces[foxPos].GetAlowedGridSpaces().Contains(sheep4Pos) == true
-                    || gridSpaces[foxPos].GetAlowedGridSpaces().Count == 2
-                    && gridSpaces[foxPos].GetAlowedGridSpaces().Contains(sheep1Pos) == true
-                    && gridSpaces[foxPos].GetAlowedGridSpaces().Contains(sheep4Pos) == true
-                    || gridSpaces[foxPos].GetAlowedGridSpaces().Count == 2
-                    && gridSpaces[foxPos].GetAlowedGridSpaces().Contains(sheep2Pos) == true
-                    && gridSpaces[foxPos].GetAlowedGridSpaces().Contains(sheep3Pos) == true
-
-                    )
-                {
-                    print("**************************SHEEEEEEP WIN!!!!*************************");
-                    ResetGridSpaces();
-                }
-
-                //foxCanOnlyMoveOnfourTiles
-                if (gridSpaces[foxPos].GetAlowedGridSpaces().Count == 4
-                    && gridSpaces[foxPos].GetAlowedGridSpaces().Contains(sheep1Pos) == true
-                    && gridSpaces[foxPos].GetAlowedGridSpaces().Contains(sheep2Pos) == true
-                    && gridSpaces[foxPos].GetAlowedGridSpaces().Contains(sheep3Pos) == true
-                    && gridSpaces[foxPos].GetAlowedGridSpaces().Contains(sheep4Pos) == true
-                    )
-                {
-                    print("**************************SHEEEEEEP WIN!!!!*************************");
-                    ResetGridSpaces();
-                } */
 
                 //Sheep 1,2,3,4
                 if (player.playerRole == gridSpaces[i].GetGridSpaceStatus())
@@ -1132,7 +2266,7 @@ public class GameController : MonoBehaviour {
 
                 }
                 
-                /*if (
+                if (
                     
                     foxPos == 0 ||
                     foxPos == 1 ||
@@ -1145,7 +2279,18 @@ public class GameController : MonoBehaviour {
                 {
                     print("GAMEOVER! FOXES WIN!!");
                     ResetGridSpaces();
-                }*/
+                }
+            }
+
+            int gSpacesCounter = 0;
+            for (int o = 0; o < gridSpaces[foxPos].GetAlowedGridSpaces().Count; o++)
+            {
+                if(gridSpaces[gridSpaces[foxPos].GetAlowedGridSpaces()[o]].GetGridSpaceStatus() == GridSpaceStatus.SHEEP){
+                    gSpacesCounter++;
+                }
+                if(gSpacesCounter == gridSpaces[foxPos].GetAlowedGridSpaces().Count){
+                    ResetGridSpaces();
+                }
             }
             
             gridSpaces[i].SetFoxPosition(foxPos);
@@ -1162,19 +2307,35 @@ public class GameController : MonoBehaviour {
     }
 
     void StartGame() {
-		ResetGridSpaces ();
+        ResetGridSpaces ();
     }
 
-	void ResetGridSpaces() {
-		for(int i = 0; i < 64; i++) {
-			gridSpaces [i].SetGridSpaceStatus (GridSpaceStatus.EMPTY);
+    void ResetGridSpaces() {
+        Player player = GameObject.Find("/Player").GetComponent<Player>();
+        for(int i = 0; i < 64; i++) {
+            gridSpaces [i].SetGridSpaceStatus (GridSpaceStatus.EMPTY);
             gridSpaces[i].SetSheep1OldPos(GridSpaceStatus.SHEEP);
             gridSpaces[i].SetSheep2OldPos(GridSpaceStatus.SHEEP);
             gridSpaces[i].SetSheep3OldPos(GridSpaceStatus.SHEEP);
             gridSpaces[i].SetSheep4OldPos(GridSpaceStatus.SHEEP);
-            gridSpaces [i].SetGridSpaceStatus(GridSpaceStatus.EMPTY);
-        }
+            gridSpaces[i].SetGridSpaceStatus(GridSpaceStatus.EMPTY);
 
+
+            if(GridSpaceStatus.SHEEP == player.playerRole){
+                gridSpaces[i].SetAITurn(true);
+            }else{
+                gridSpaces[i].SetAITurn(false);
+            }
+        }
+        sheepList[0] = 1;
+        sheepList[1] = 3;
+        sheepList[2] = 5;
+        sheepList[3] = 7;
+
+        sheepListClone[0] = 1;
+        sheepListClone[1] = 3;
+        sheepListClone[2] = 5;
+        sheepListClone[3] = 7;
 
         // 1, 3, 5 and 7 are sheep
         // 60 is a wolf
@@ -1188,10 +2349,14 @@ public class GameController : MonoBehaviour {
         sheep3buffer = 5;
         sheep4buffer = 7;
         gridSpaces[1].SetGridSpaceStatus(GridSpaceStatus.SHEEP);
-		gridSpaces[3].SetGridSpaceStatus(GridSpaceStatus.SHEEP);
-		gridSpaces[5].SetGridSpaceStatus(GridSpaceStatus.SHEEP);
-		gridSpaces[7].SetGridSpaceStatus(GridSpaceStatus.SHEEP);
-		gridSpaces[60].SetGridSpaceStatus(GridSpaceStatus.WOLF);
-	}
+        gridSpaces[3].SetGridSpaceStatus(GridSpaceStatus.SHEEP);
+        gridSpaces[5].SetGridSpaceStatus(GridSpaceStatus.SHEEP);
+        gridSpaces[7].SetGridSpaceStatus(GridSpaceStatus.SHEEP);
+        gridSpaces[60].SetGridSpaceStatus(GridSpaceStatus.WOLF);
+
+
+
+
+    }
 
 }
